@@ -99,10 +99,11 @@ class DQNAgent:
         self.model.save_weights(name)
 
 class rewardSystem:
-    def __init__(self):
+    def __init__(self, rat):
         self.rewardRNN = load_model("./NoteRNN.h5")
         self.state_note = np.zeros((1, segLen, vecLen))
         self.state_delta= np.zeros((1, segLen, maxdelta))
+        self.c = rat
     def reset(self):
         self.state_note = np.zeros((1, segLen, vecLen))
         self.state_delta= np.zeros((1, segLen, maxdelta))
@@ -179,9 +180,11 @@ class rewardSystem:
         return self.state_note, self.state_delta
     def reward(self, action_note, action_delta, firstNote=None):
         done = False
-        p_n, p_d = self.NoteRNN.predict([self.state_note, self.state_delta], epochs=1, verbose=0)[0]
-        reward_note = math.log(p_n[action_note])
-        reward_delta = math.log(p_d[action_delta])
+        p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], epochs=1, verbose=0)[0]
+        pitchStyleReward = math.log(p_n[action_note])
+        tickStyleReward = math.log(p_d[action_delta])
+        reward_note=0
+        reward_delta=0
         if np.sum(self.state_note)>0 and np.sum(self.state_delta)>0:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
@@ -202,13 +205,13 @@ class rewardSystem:
         self.state_delta = np.roll(self.state_delta, -1, axis=1)
         self.state_delta[0,-1,:] = 0
         self.state_delta[0,-1,action_delta] = 1
-        return self.state_note, self.state_delta, reward_note, reward_delta, done
+        return self.state_note, self.state_delta, reward_note*self.c+pitchStyleReward, reward_delta*self.c+tickStyleReward, done
 
 
 if __name__ == "__main__":
     agent = DQNAgent()
     agent.load("./NoteRNN.h5")
-    rewardSys = rewardSystem()
+    rewardSys = rewardSystem(0.01)
     done = False
     batch_size = 32
 
