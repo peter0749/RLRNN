@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 import random
-import gym
 import numpy as np
 from collections import deque
-from keras.models import Sequential
-from keras.layers import Dense
+from keras.models import Sequential, Model
+from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormalization
 from keras.optimizers import Adam
 from keras import backend as K
 from keras.models import load_model
@@ -73,7 +72,7 @@ class DQNAgent:
 
     def act(self, state):
         if np.random.rand() <= self.epsilon:
-            return random.randrange(self.vecLen), random.randrange(self.maxdelta)
+            return random.randrange(vecLen), random.randrange(maxdelta)
         act_note, act_delta = self.model.predict(state)[0]
         return np.argmax(act_note), np.argmax(act_delta)  # returns action
 
@@ -104,12 +103,9 @@ class rewardSystem:
         self.rewardRNN = load_model("./NoteRNN.h5")
         self.state_note = np.zeros((1, segLen, vecLen))
         self.state_delta= np.zeros((1, segLen, maxdelta))
-    def reset():
+    def reset(self):
         self.state_note = np.zeros((1, segLen, vecLen))
         self.state_delta= np.zeros((1, segLen, maxdelta))
-    def softmax(x):
-        y = np.exp(x - np.max(x))
-        return y / y.sum(axis=0)
     def countFinger(x, deltas):
         if x>0: return 0
         cnt=1
@@ -119,9 +115,9 @@ class rewardSystem:
             else: break
         return 0 if cnt<=4 else -cnt*10
     def lrs(text):
-    import numpy as np
-    _, _, lcp = suffix_array(text)
-    return np.max(np.array(lcp))
+        import numpy as np
+        _, _, lcp = suffix_array(text)
+        return np.max(np.array(lcp))
 
     def suffix_array(text, _step=16):
         tx = text
@@ -179,23 +175,25 @@ class rewardSystem:
         if size > 0:
             lcp[0] = 0
         return sa, rsa, lcp
-    def get_state():
+    def get_state(self):
         return self.state_note, self.state_delta
     def reward(self, action_note, action_delta, firstNote=None):
-        state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
-        state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
+        done = False
         p_n, p_d = self.NoteRNN.predict([self.state_note, self.state_delta], epochs=1, verbose=0)[0]
-        reward_note = math.log(self.softmax(p_n)[action_note])
-        reward_delta = math.log(self.softmax(p_d)[action_delta])
-        if not firstNote is None and abs(firstNote-action_note)%12==0:
-            done = True
-            reward_note+=100
-        lrsi = state_idx_note
-        lrsNote_old = lrs(lrsi)
-        lrsi.append(action_note)
-        lrsNote_new = lrs(lrsi)
-        reward_note += 10*(lrsNote_new- lrsNote_old)
-        reward_delta += countFinger(action_delta, state_idx_delta)*10
+        reward_note = math.log(p_n[action_note])
+        reward_delta = math.log(p_d[action_delta])
+        if np.sum(self.state_note)>0 and np.sum(self.state_delta)>0:
+            state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
+            state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
+            if not firstNote is None and abs(firstNote-action_note)%12==0:
+                done = True
+                reward_note+=100
+            lrsi = state_idx_note
+            lrsNote_old = lrs(lrsi)
+            lrsi.append(action_note)
+            lrsNote_new = lrs(lrsi)
+            reward_note += 10*(lrsNote_new- lrsNote_old)
+            reward_delta += countFinger(action_delta, state_idx_delta)*10
 
         self.state_note = np.roll(self.state_note, -1, axis=1)
         self.state_note[0,-1,:] = 0
@@ -208,7 +206,7 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = DQNAgent(state_size, action_size)
+    agent = DQNAgent()
     agent.load("./NoteRNN.h5")
     rewardSys = rewardSystem()
     done = False
