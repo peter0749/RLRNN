@@ -99,16 +99,80 @@ class DQNAgent:
     def save(self, name):
         self.model.save_weights(name)
 
+def lrs(text):
+    import numpy as np
+    _, _, lcp = suffix_array(text)
+    return np.max(np.array(lcp))
+
+def suffix_array(text, _step=16):
+    tx = text
+    size = len(tx)
+    step = min(max(_step, 1), len(tx))
+    sa = list(range(len(tx)))
+    sa.sort(key=lambda i: tx[i:i + step])
+    grpstart = size * [False] + [True]  # a boolean map for iteration speedup.
+    # It helps to skip yet resolved values. The last value True is a sentinel.
+    rsa = size * [None]
+    stgrp, igrp = '', 0
+    for i, pos in enumerate(sa):
+        st = tx[pos:pos + step]
+        if st != stgrp:
+            grpstart[igrp] = (igrp < i - 1)
+            stgrp = st
+            igrp = i
+        rsa[pos] = igrp
+        sa[i] = pos
+    grpstart[igrp] = (igrp < size - 1 or size == 0)
+    while grpstart.index(True) < size:
+        # assert step <= size
+        nextgr = grpstart.index(True)
+        while nextgr < size:
+            igrp = nextgr
+            nextgr = grpstart.index(True, igrp + 1)
+            glist = []
+            for ig in range(igrp, nextgr):
+                pos = sa[ig]
+                if rsa[pos] != igrp:
+                    break
+                newgr = rsa[pos + step] if pos + step < size else -1
+                glist.append((newgr, pos))
+            glist.sort()
+            for ig, g in groupby(glist, key=itemgetter(0)):
+                g = [x[1] for x in g]
+                sa[igrp:igrp + len(g)] = g
+                grpstart[igrp] = (len(g) > 1)
+                for pos in g:
+                    rsa[pos] = igrp
+                igrp += len(g)
+        step *= 2
+    del grpstart
+    # create LCP array
+    lcp = size * [None]
+    h = 0
+    for i in range(size):
+        if rsa[i] > 0:
+            j = sa[rsa[i] - 1]
+            while i != size - h and j != size - h and tx[i + h] == tx[j + h]:
+                h += 1
+            lcp[rsa[i]] = h
+            if h > 0:
+                h -= 1
+    if size > 0:
+        lcp[0] = 0
+    return sa, rsa, lcp
+
 class rewardSystem:
     def __init__(self, rat):
         self.rewardRNN = load_model("./NoteRNN.h5")
         self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
         self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
+        self.firstNote = None
         self.c = rat
     def reset(self):
         self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
         self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
-    def countFinger(x, deltas):
+        self.firstNote = None
+    def countFinger(self, x, deltas):
         if x>0: return 0
         cnt=1
         for v in reversed(deltas):
@@ -116,68 +180,7 @@ class rewardSystem:
                 cnt+=1
             else: break
         return 0 if cnt<=4 else -cnt*10
-    def lrs(text):
-        import numpy as np
-        _, _, lcp = suffix_array(text)
-        return np.max(np.array(lcp))
-
-    def suffix_array(text, _step=16):
-        tx = text
-        size = len(tx)
-        step = min(max(_step, 1), len(tx))
-        sa = list(range(len(tx)))
-        sa.sort(key=lambda i: tx[i:i + step])
-        grpstart = size * [False] + [True]  # a boolean map for iteration speedup.
-        # It helps to skip yet resolved values. The last value True is a sentinel.
-        rsa = size * [None]
-        stgrp, igrp = '', 0
-        for i, pos in enumerate(sa):
-            st = tx[pos:pos + step]
-            if st != stgrp:
-                grpstart[igrp] = (igrp < i - 1)
-                stgrp = st
-                igrp = i
-            rsa[pos] = igrp
-            sa[i] = pos
-        grpstart[igrp] = (igrp < size - 1 or size == 0)
-        while grpstart.index(True) < size:
-            # assert step <= size
-            nextgr = grpstart.index(True)
-            while nextgr < size:
-                igrp = nextgr
-                nextgr = grpstart.index(True, igrp + 1)
-                glist = []
-                for ig in range(igrp, nextgr):
-                    pos = sa[ig]
-                    if rsa[pos] != igrp:
-                        break
-                    newgr = rsa[pos + step] if pos + step < size else -1
-                    glist.append((newgr, pos))
-                glist.sort()
-                for ig, g in groupby(glist, key=itemgetter(0)):
-                    g = [x[1] for x in g]
-                    sa[igrp:igrp + len(g)] = g
-                    grpstart[igrp] = (len(g) > 1)
-                    for pos in g:
-                        rsa[pos] = igrp
-                    igrp += len(g)
-            step *= 2
-        del grpstart
-        # create LCP array
-        lcp = size * [None]
-        h = 0
-        for i in range(size):
-            if rsa[i] > 0:
-                j = sa[rsa[i] - 1]
-                while i != size - h and j != size - h and tx[i + h] == tx[j + h]:
-                    h += 1
-                lcp[rsa[i]] = h
-                if h > 0:
-                    h -= 1
-        if size > 0:
-            lcp[0] = 0
-        return sa, rsa, lcp
-    def countSameNote(x, l):
+    def countSameNote(self, x, l):
         cnt = 1
         for v in reversed(l):
             if v==x: cnt+=1
@@ -185,7 +188,7 @@ class rewardSystem:
         return -100 if cnt>4 else 0
     def get_state(self):
         return self.state_note, self.state_delta
-    def reward(self, action_note, action_delta, firstNote=None):
+    def reward(self, action_note, action_delta):
         done = False
         p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
         pitchStyleReward = math.log(p_n[0][action_note])
@@ -195,16 +198,16 @@ class rewardSystem:
         if np.sum(self.state_note)==segLen and np.sum(self.state_delta)==segLen:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
-            if not firstNote is None and abs(firstNote-action_note)%12==0:
+            if not self.firstNote is None and abs(self.firstNote-action_note)%12==0:
                 done = True
                 reward_note+=100
-            reward_note += countSameNote(action_note, state_idx_note)
+            reward_note += self.countSameNote(action_note, state_idx_note)
             lrsi = state_idx_note
             lrsNote_old = lrs(lrsi)
             lrsi.append(action_note)
             lrsNote_new = lrs(lrsi)
             reward_note += 10*(lrsNote_new- lrsNote_old)
-            reward_delta += countFinger(action_delta, state_idx_delta)*10
+            reward_delta += self.countFinger(action_delta, state_idx_delta)*10
 
         self.state_note = np.roll(self.state_note, -1, axis=1)
         self.state_note[0,-1,:] = 0
@@ -213,6 +216,8 @@ class rewardSystem:
         self.state_delta = np.roll(self.state_delta, -1, axis=1)
         self.state_delta[0,-1,:] = 0
         self.state_delta[0,-1,action_delta] = 1
+        if self.firstNote is None:
+            self.firstNote = action_note
         return reward_note*self.c+pitchStyleReward, reward_delta*self.c+tickStyleReward, done
 
 
@@ -228,11 +233,7 @@ if __name__ == "__main__":
         snote, sdelta = rewardSys.get_state()
         for time in range(500):
             action_note, action_delta = agent.act([snote, sdelta])
-            if time==0:
-                firstNote = np.argmax(action_note)
-                reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, None)
-            else:
-                reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, firstNote)
+            reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta)
             nnote, ndelta = rewardSys.get_state()
             agent.remember(snote, sdelta, action_note, action_delta, reward_note, reward_delta, nnote, ndelta, done)
             snote, sdelta = nnote, ndelta
