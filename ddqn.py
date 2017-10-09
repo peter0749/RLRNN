@@ -176,11 +176,17 @@ class rewardSystem:
         if size > 0:
             lcp[0] = 0
         return sa, rsa, lcp
+    def countSameNote(x, l):
+        cnt = 1
+        for v in reversed(l):
+            if v==x: cnt+=1
+            else: break
+        return -100 if cnt>4 else 0
     def get_state(self):
         return self.state_note, self.state_delta
     def reward(self, action_note, action_delta, firstNote=None):
         done = False
-        p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], epochs=1, verbose=0)[0]
+        p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)[0]
         pitchStyleReward = math.log(p_n[action_note])
         tickStyleReward = math.log(p_d[action_delta])
         reward_note=0
@@ -191,6 +197,7 @@ class rewardSystem:
             if not firstNote is None and abs(firstNote-action_note)%12==0:
                 done = True
                 reward_note+=100
+            reward_note += countSameNote(action_note, state_idx_note)
             lrsi = state_idx_note
             lrsNote_old = lrs(lrsi)
             lrsi.append(action_note)
