@@ -204,16 +204,12 @@ class rewardSystem:
             return 4
         elif diffLastNote==8:
             return 2
-        elif diffLastNote==12:
-            return 1
+        #elif diffLastNote==12:
+            #return 1
         elif diffLastNote==7: ## chinese
             return -3
         elif diffLastNote==8:
             return -4
-        elif diffLastNote==2: ## !?!?
-            return -10
-        elif diffLastNote<2:
-            return -1
         return 0
     def reward(self, action_note, action_delta):
         done = False
