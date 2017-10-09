@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import sys
 import random
 import numpy as np
 from collections import deque
@@ -239,7 +240,7 @@ if __name__ == "__main__":
             snote, sdelta = nnote, ndelta
             if done:
                 agent.update_target_model()
-                print("episode: {}/{}, time: {}, e: {:.2}"
+                sys.stderr.write("episode: {}/{}, time: {}, e: {:.2}"
                       .format(e, EPISODES, time, agent.epsilon))
                 break
         if len(agent.memory) > batch_size:
