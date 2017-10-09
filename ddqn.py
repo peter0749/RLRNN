@@ -257,16 +257,20 @@ if __name__ == "__main__":
     for e in range(EPISODES):
         rewardSys.reset()
         snote, sdelta = rewardSys.get_state()
+        tns = 0 ## total pitch score
+        tds = 0 ## total tick score
         for time in range(500):
             action_note, action_delta = agent.act([snote, sdelta])
             reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta)
+            tns += reward_note
+            tds += reward_delta
             nnote, ndelta = rewardSys.get_state()
             agent.remember(snote, sdelta, action_note, action_delta, reward_note, reward_delta, nnote, ndelta, done)
             snote, sdelta = nnote, ndelta
             if done:
                 agent.update_target_model()
-                sys.stderr.write("episode: {}/{}, time: {}, e: {:.2}\n"
-                      .format(e, EPISODES, time, agent.epsilon))
+                sys.stderr.write("episode: {}/{}, time: {}, e: {:.2}, pitch_score: {:.2}, tick_score: {:.2}\n"
+                      .format(e, EPISODES, time, agent.epsilon, tns, tds))
                 break
         if len(agent.memory) > batch_size:
             agent.replay(batch_size)
