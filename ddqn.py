@@ -224,7 +224,7 @@ class rewardSystem:
 
 if __name__ == "__main__":
     agent = DQNAgent()
-    agent.load("./NoteRNN.h5")
+    agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.01)
     done = False
     batch_size = 32
@@ -240,7 +240,7 @@ if __name__ == "__main__":
             snote, sdelta = nnote, ndelta
             if done:
                 agent.update_target_model()
-                sys.stderr.write("episode: {}/{}, time: {}, e: {:.2}"
+                sys.stderr.write("episode: {}/{}, time: {}, e: {:.2}\n"
                       .format(e, EPISODES, time, agent.epsilon))
                 break
         if len(agent.memory) > batch_size:
