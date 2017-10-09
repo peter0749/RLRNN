@@ -2,6 +2,7 @@
 import random
 import numpy as np
 from collections import deque
+import math
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormalization
 from keras.optimizers import Adam
@@ -73,8 +74,8 @@ class DQNAgent:
     def act(self, state):
         if np.random.rand() <= self.epsilon:
             return random.randrange(vecLen), random.randrange(maxdelta)
-        act_note, act_delta = self.model.predict(state)[0]
-        return np.argmax(act_note), np.argmax(act_delta)  # returns action
+        act_note, act_delta = self.model.predict(state)
+        return np.argmax(act_note[0]), np.argmax(act_delta[0])  # returns action
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
@@ -84,10 +85,10 @@ class DQNAgent:
                 target_note[0][action_note] = reward_note
                 target_delta[0][action_delta] = reward_delta
             else:
-                a_note, a_delta = self.model.predict([next_state_note, next_state_delta])[0]
-                t_note, t_delta = self.target_model.predict([next_state_note, next_state_delta])[0]
-                target_note[0][action_note] = reward_note + self.gamma * t_note[np.argmax(a_note)]
-                target_delta[0][action_delta] = reward_delta + self.gamma * t_delta[np.argmax(a_delta)]
+                a_note, a_delta = self.model.predict([next_state_note, next_state_delta])
+                t_note, t_delta = self.target_model.predict([next_state_note, next_state_delta])
+                target_note[0][action_note] = reward_note + self.gamma * t_note[0][np.argmax(a_note[0])]
+                target_delta[0][action_delta] = reward_delta + self.gamma * t_delta[0][np.argmax(a_delta[0])]
             self.model.fit([state_note, state_delta], [target_note, target_delta], epochs=1, verbose=0)
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
@@ -186,9 +187,9 @@ class rewardSystem:
         return self.state_note, self.state_delta
     def reward(self, action_note, action_delta, firstNote=None):
         done = False
-        p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)[0]
-        pitchStyleReward = math.log(p_n[action_note])
-        tickStyleReward = math.log(p_d[action_delta])
+        p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
+        pitchStyleReward = math.log(p_n[0][action_note])
+        tickStyleReward = math.log(p_d[0][action_delta])
         reward_note=0
         reward_delta=0
         if np.sum(self.state_note)>0 and np.sum(self.state_delta)>0:
