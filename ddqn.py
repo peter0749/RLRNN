@@ -102,12 +102,12 @@ class DQNAgent:
 class rewardSystem:
     def __init__(self, rat):
         self.rewardRNN = load_model("./NoteRNN.h5")
-        self.state_note = np.zeros((1, segLen, vecLen))
-        self.state_delta= np.zeros((1, segLen, maxdelta))
+        self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
+        self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
         self.c = rat
     def reset(self):
-        self.state_note = np.zeros((1, segLen, vecLen))
-        self.state_delta= np.zeros((1, segLen, maxdelta))
+        self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
+        self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
     def countFinger(x, deltas):
         if x>0: return 0
         cnt=1
@@ -192,7 +192,7 @@ class rewardSystem:
         tickStyleReward = math.log(p_d[0][action_delta])
         reward_note=0
         reward_delta=0
-        if np.sum(self.state_note)>0 and np.sum(self.state_delta)>0:
+        if np.sum(self.state_note)==segLen and np.sum(self.state_delta)==segLen:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
             if not firstNote is None and abs(firstNote-action_note)%12==0:
@@ -225,15 +225,17 @@ if __name__ == "__main__":
 
     for e in range(EPISODES):
         rewardSys.reset()
+        snote, sdelta = rewardSys.get_state()
         for time in range(500):
-            snote, sdelta = rewardSys.get_state()
             action_note, action_delta = agent.act([snote, sdelta])
             if time==0:
                 firstNote = np.argmax(action_note)
                 reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, None)
             else:
                 reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, firstNote)
-            agent.remember(state_note, state_delta, action_note, action_delta, reward_note, reward_delta, next_state_note, next_state_delta, done)
+            nnote, ndelta = rewardSys.get_state()
+            agent.remember(snote, sdelta, action_note, action_delta, reward_note, reward_delta, nnote, ndelta, done)
+            snote, sdelta = nnote, ndelta
             if done:
                 agent.update_target_model()
                 print("episode: {}/{}, time: {}, e: {:.2}"
