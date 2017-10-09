@@ -199,6 +199,22 @@ class rewardSystem:
         return -100*(cnt-4) if cnt>4 else 0
     def get_state(self):
         return self.state_note, self.state_delta
+    def scale(self, diffLastNote):
+        if diffLastNote==4: ## western
+            return 4
+        elif diffLastNote==8:
+            return 2
+        elif diffLastNote==12:
+            return 1
+        elif diffLastNote==7: ## chinese
+            return -3
+        elif diffLastNote==8:
+            return -4
+        elif diffLastNote==2: ## !?!?
+            return -10
+        elif diffLastNote<2:
+            return -1
+        return 0
     def reward(self, action_note, action_delta):
         done = False
         p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
@@ -213,6 +229,9 @@ class rewardSystem:
                 done = True
                 reward_note+=100
             reward_note += self.countSameNote(action_note, state_idx_note)
+            ## determine
+            diffLastNote = abs(action_note - state_idx_note[-1])
+            reward_note += self.scale(diffLastNote)
             lrsi = state_idx_note
             lrsNote_old = lrs(lrsi)
             lrsi.append(action_note)
