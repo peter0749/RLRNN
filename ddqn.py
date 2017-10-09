@@ -28,7 +28,7 @@ class DQNAgent:
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.99
-        self.learning_rate = 0.001
+        self.learning_rate = 0.0001
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
@@ -196,7 +196,7 @@ class rewardSystem:
         for v in reversed(l):
             if v==x: cnt+=1
             else: break
-        return -100*(cnt-4) if cnt>4 else 0
+        return -10*(cnt-4) if cnt>4 else 0
     def get_state(self):
         return self.state_note, self.state_delta
     def scale(self, diffLastNote):
@@ -223,7 +223,7 @@ class rewardSystem:
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
             if not self.firstNote is None and abs(self.firstNote-action_note)%12==0:
                 done = True
-                reward_note+=100
+                reward_note+=10
             reward_note += self.countSameNote(action_note, state_idx_note)
             ## determine
             diffLastNote = abs(action_note - state_idx_note[-1])
@@ -250,7 +250,7 @@ class rewardSystem:
 if __name__ == "__main__":
     agent = DQNAgent()
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.01)
+    rewardSys = rewardSystem(0.001)
     done = False
     batch_size = 32
 
