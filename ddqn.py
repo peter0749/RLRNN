@@ -269,8 +269,8 @@ if __name__ == "__main__":
             snote, sdelta = nnote, ndelta
             if done:
                 agent.update_target_model()
-                sys.stderr.write("episode: {}/{}, time: {}, e: {:.2}, pitch_score: {:.2}, tick_score: {:.2}\n"
-                      .format(e, EPISODES, time, agent.epsilon, tns, tds))
+                sys.stderr.write("episode: {}/{}, time: {}, e: {:.2}, avg_pitch_score: {:.2}, avg_tick_score: {:.2}\n"
+                      .format(e, EPISODES, time, agent.epsilon, tns/time, tds/time))
                 break
         if len(agent.memory) > batch_size:
             agent.replay(batch_size)
