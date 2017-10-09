@@ -213,7 +213,7 @@ class rewardSystem:
         self.state_delta = np.roll(self.state_delta, -1, axis=1)
         self.state_delta[0,-1,:] = 0
         self.state_delta[0,-1,action_delta] = 1
-        return self.state_note, self.state_delta, reward_note*self.c+pitchStyleReward, reward_delta*self.c+tickStyleReward, done
+        return reward_note*self.c+pitchStyleReward, reward_delta*self.c+tickStyleReward, done
 
 
 if __name__ == "__main__":
