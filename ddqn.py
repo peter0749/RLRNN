@@ -265,7 +265,7 @@ class rewardSystem:
 if __name__ == "__main__":
     agent = DQNAgent()
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.01,0.1)
+    rewardSys = rewardSystem(0.005,0.1)
     done = False
     batch_size = 64
 
