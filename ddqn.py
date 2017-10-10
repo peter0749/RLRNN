@@ -248,7 +248,9 @@ class rewardSystem:
         self.state_delta[0,-1,action_delta] = 1
         if self.firstNote is None:
             self.firstNote = action_note
-        return reward_note*self.c+self.d*pitchStyleReward, reward_delta*self.c+self.d*tickStyleReward, done
+        reward_note = reward_note*self.c+self.d*pitchStyleReward
+        reward_delta= reward_delta*self.c+self.d*tickStyleReward
+        return max(-1.,min(1.,reward_note)), max(-1.,min(1.,reward_delta)), done
 
 
 if __name__ == "__main__":
