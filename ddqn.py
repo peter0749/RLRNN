@@ -295,7 +295,7 @@ if __name__ == "__main__":
         tds = 0 ## total tick score
         for time in range(500):
             action_note, action_delta = agent.act([snote, sdelta])
-            reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, True)
+            reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False)
             tns += reward_note
             tds += reward_delta
             nnote, ndelta = rewardSys.get_state()
