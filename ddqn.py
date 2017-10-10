@@ -187,9 +187,9 @@ class rewardSystem:
     def countFinger(self, x, y, deltas, notes, lim):
         if x>0: return 0
         cnt=2
-        for i, v in reversed(enumerate(deltas)):
+        for i, v in enumerate(reversed(deltas)):
             if v==0:
-                cnt += 1 if self.sameTrack(y, notes[i]) else 0
+                cnt += 1 if self.sameTrack(y, notes[segLen-1-i]) else 0
             else: break
         return 0 if cnt<=lim else -(cnt-lim)*10
     def countSameNote(self, x, l):
