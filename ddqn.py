@@ -185,7 +185,7 @@ class rewardSystem:
         self.firstNote = None
     def countFinger(self, x, deltas):
         if x>0: return 0
-        cnt=1
+        cnt=2
         for v in reversed(deltas):
             if v==0:
                 cnt+=1
