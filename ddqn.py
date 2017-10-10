@@ -197,13 +197,13 @@ class rewardSystem:
             if v==0:
                 cnt += 1 if self.sameTrack(y, notes[segLen-1-i]) else 0
             else: break
-        return 0 if cnt<=lim else -(cnt-lim)*10
+        return 0 if cnt<=lim else -(cnt-lim)*2
     def countSameNote(self, x, l):
         cnt = 1
         for v in reversed(l):
             if v==x: cnt+=1
             else: break
-        return -10*(cnt-4) if cnt>4 else 0
+        return -3*(cnt-4) if cnt>4 else 0
     def get_state(self):
         return self.state_note, self.state_delta
     def scale(self, diffLastNote, delta):
@@ -221,7 +221,7 @@ class rewardSystem:
             return 1
         return 0
     def detectAnnoyingLoop(self, noteSeg, l):
-        return noteSeg[-l:]==noteSeg[-2*l:-l]
+        return np.array_equal(noteSeg[0,-l:,:], noteSeg[0,-2*l:-l,:])
     def sameTrack(self, a, b):
         return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
     def reward(self, action_note, action_delta, verbose=False):
@@ -235,6 +235,7 @@ class rewardSystem:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
             if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
+                done = True ## good end
                 reward_note+=5
             reward_note += self.countSameNote(action_note, state_idx_note)
             if self.sameTrack(action_note, state_idx_note[-1]):
@@ -244,11 +245,8 @@ class rewardSystem:
                 lrsi = state_idx_note
                 lrsNote_old = lrs(lrsi)
                 lrsi.append(action_note)
-                if detectAnnoyingLoop(lrsi,8):
-                    done = True ## bad end, all efforts in vain
-                else:
-                    lrsNote_new = lrs(lrsi)
-                    reward_note += 10*(lrsNote_new- lrsNote_old)
+                lrsNote_new = lrs(lrsi)
+                reward_note += 2*(lrsNote_new- lrsNote_old)
             except:
                 pass
             if action_note<pianoKeys: ## main
@@ -265,10 +263,13 @@ class rewardSystem:
         self.state_delta[0,-1,action_delta] = 1
         if self.firstNote is None:
             self.firstNote = action_note
+        if self.detectAnnoyingLoop(self.state_note, 8):
+            done = True ## bad end
+            reward_note = -20
         if verbose:
             sys.stderr.write("reward_note = %d, %.2f, %s\n" % (reward_note, pitchStyleReward, "T" if done else "F"))
             sys.stderr.write("reward_delta = %d, %.2f\n" % (reward_delta, tickStyleReward))
-        reward_note = -10 if done else reward_note*self.c+self.d*pitchStyleReward
+        reward_note = reward_note*self.c+self.d*pitchStyleReward
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
         return max(-1.,min(1.,reward_note)), max(-1.,min(1.,reward_delta)), done
 
@@ -287,7 +288,7 @@ if __name__ == "__main__":
         tds = 0 ## total tick score
         for time in range(500):
             action_note, action_delta = agent.act([snote, sdelta])
-            reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta)
+            reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, True)
             tns += reward_note
             tds += reward_delta
             nnote, ndelta = rewardSys.get_state()
