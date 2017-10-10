@@ -6,7 +6,7 @@ from collections import deque
 import math
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormalization
-from keras.optimizers import Adam
+from keras.optimizers import Adam, RMSprop
 from keras import backend as K
 from keras.models import load_model
 from attention_block import SoftAttentionBlock
@@ -62,7 +62,7 @@ class DQNAgent:
         model = Model([noteInput, deltaInput], [pred_notes, pred_delta])
 
         model.compile(loss=self._huber_loss,
-                      optimizer=Adam(lr=self.learning_rate))
+                      optimizer=RMSprop(lr=self.learning_rate))
         return model
 
     def update_target_model(self):
