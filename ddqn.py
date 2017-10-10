@@ -250,9 +250,9 @@ class rewardSystem:
             except:
                 pass
             if action_note<pianoKeys: ## main
-                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 3)*10
+                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 3)
             else: ## accompany
-                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)*10
+                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
 
         self.state_note = np.roll(self.state_note, -1, axis=1)
         self.state_note[0,-1,:] = 0
