@@ -184,14 +184,14 @@ class rewardSystem:
         self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
         self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
         self.firstNote = None
-    def countFinger(self, x, deltas):
+    def countFinger(self, x, y, deltas, notes, lim):
         if x>0: return 0
         cnt=2
-        for v in reversed(deltas):
+        for i, v in reversed(enumerate(deltas)):
             if v==0:
-                cnt+=1
+                cnt += 1 if self.sameTrack(y, notes[i]) else 0
             else: break
-        return 0 if cnt<=4 else -cnt*10
+        return 0 if cnt<=lim else -(cnt-lim)*10
     def countSameNote(self, x, l):
         cnt = 1
         for v in reversed(l):
@@ -212,6 +212,8 @@ class rewardSystem:
         elif diffLastNote==8:
             return -4
         return 0
+    def sameTrack(self, a, b):
+        return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
     def reward(self, action_note, action_delta):
         done = False
         p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
@@ -222,13 +224,13 @@ class rewardSystem:
         if np.sum(self.state_note)==segLen and np.sum(self.state_delta)==segLen:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
-            if not self.firstNote is None and abs(self.firstNote-action_note)%12==0:
+            if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
                 done = True
                 reward_note+=10
             reward_note += self.countSameNote(action_note, state_idx_note)
-            ## determine
-            diffLastNote = abs(action_note - state_idx_note[-1])
-            reward_note += self.scale(diffLastNote)
+            if self.sameTrack(action_note, state_idx_note[-1]):
+                diffLastNote = abs(action_note - state_idx_note[-1])
+                reward_note += self.scale(diffLastNote)
             try:
                 lrsi = state_idx_note
                 lrsNote_old = lrs(lrsi)
