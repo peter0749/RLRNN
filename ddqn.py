@@ -238,8 +238,15 @@ class rewardSystem:
                 done = True ## good end
                 reward_note+=5
             reward_note += self.countSameNote(action_note, state_idx_note)
-            if self.sameTrack(action_note, state_idx_note[-1]):
-                diffLastNote = abs(action_note - state_idx_note[-1])
+            idx = None
+            for i, v in enumerate(reversed(state_idx_note)):
+                if self.sameTrack(v, action_note):
+                    idx = -1-i
+                    break
+                elif state_idx_delta[-1-i]>0:
+                    break
+            if not idx is None:
+                diffLastNote = abs(action_note - state_idx_note[idx])
                 reward_note += self.scale(diffLastNote, action_delta)
             try:
                 lrsi = state_idx_note
