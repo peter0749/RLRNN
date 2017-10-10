@@ -212,6 +212,8 @@ class rewardSystem:
         elif diffLastNote==8:
             return -4
         return 0
+    def detectAnnoyingLoop(self, noteSeg, l):
+        return noteSeg[-l:]==noteSeg[-2*l:-l]
     def sameTrack(self, a, b):
         return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
     def reward(self, action_note, action_delta):
@@ -235,11 +237,10 @@ class rewardSystem:
                 lrsi = state_idx_note
                 lrsNote_old = lrs(lrsi)
                 lrsi.append(action_note)
-                lrsNote_new = lrs(lrsi)
-                if lrsNote_new>=16:
+                if detectAnnoyingLoop(lrsi,8):
                     reward_note-=50
-                else: ## <16
-                    reward_note += 10*(lrsNote_new- lrsNote_old)
+                lrsNote_new = lrs(lrsi)
+                reward_note += 10*(lrsNote_new- lrsNote_old)
             except:
                 pass
             if action_note<pianoKeys: ## main
