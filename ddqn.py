@@ -186,8 +186,9 @@ class rewardSystem:
         self.c = rat
         self.d = oldr
     def reset(self):
-        self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
-        self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
+        ## random inititalize
+        self.state_note[:,:,:] = np.eye(vecLen)[np.random.choice(vecLen, segLen)]
+        self.state_delta[:,:,:]= np.eye(maxdelta)[np.random.choice(maxdelta, segLen)]
         self.firstNote = None
     def countFinger(self, x, y, deltas, notes, lim):
         if x>0: return 0
