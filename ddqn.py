@@ -206,17 +206,19 @@ class rewardSystem:
         return -10*(cnt-4) if cnt>4 else 0
     def get_state(self):
         return self.state_note, self.state_delta
-    def scale(self, diffLastNote):
+    def scale(self, diffLastNote, delta):
         if diffLastNote==4: ## western
             return 4
         elif diffLastNote==8:
             return 2
-        #elif diffLastNote==12:
-            #return 1
         elif diffLastNote==7: ## chinese
             return -3
         elif diffLastNote==8:
             return -4
+        elif diffLastNote<=2 and delta==0: ## annoying sound
+            return -5
+        elif diffLastNote==12 and delta==0: ## full 8
+            return 1
         return 0
     def detectAnnoyingLoop(self, noteSeg, l):
         return noteSeg[-l:]==noteSeg[-2*l:-l]
@@ -238,7 +240,7 @@ class rewardSystem:
             reward_note += self.countSameNote(action_note, state_idx_note)
             if self.sameTrack(action_note, state_idx_note[-1]):
                 diffLastNote = abs(action_note - state_idx_note[-1])
-                reward_note += self.scale(diffLastNote)
+                reward_note += self.scale(diffLastNote, action_delta)
             try:
                 lrsi = state_idx_note
                 lrsNote_old = lrs(lrsi)
