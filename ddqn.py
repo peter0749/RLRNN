@@ -173,12 +173,13 @@ def suffix_array(text, _step=16):
     return sa, rsa, lcp
 
 class rewardSystem:
-    def __init__(self, rat):
+    def __init__(self, rat, oldr):
         self.rewardRNN = load_model("./NoteRNN.h5")
         self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
         self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
         self.firstNote = None
         self.c = rat
+        self.d = oldr
     def reset(self):
         self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
         self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
@@ -247,13 +248,13 @@ class rewardSystem:
         self.state_delta[0,-1,action_delta] = 1
         if self.firstNote is None:
             self.firstNote = action_note
-        return reward_note*self.c+pitchStyleReward, reward_delta*self.c+tickStyleReward, done
+        return reward_note*self.c+self.d*pitchStyleReward, reward_delta*self.c+self.d*tickStyleReward, done
 
 
 if __name__ == "__main__":
     agent = DQNAgent()
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.001)
+    rewardSys = rewardSystem(1,0.1)
     done = False
     batch_size = 64
 
