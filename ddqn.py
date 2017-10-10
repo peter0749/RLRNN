@@ -78,12 +78,13 @@ class DQNAgent:
         act_note, act_delta = self.model.predict(state)
         return np.argmax(act_note[0]), np.argmax(act_delta[0])  # returns action
 
-    def replay(self, batch_size):
+    def replay(self, batch_size, train_on_batch=False):
         minibatch = random.sample(self.memory, batch_size)
-        batch_note = np.zeros((batch_size, segLen, vecLen), dtype=np.bool)
-        batch_delta= np.zeros((batch_size, segLen, maxdelta), dtype=np.bool)
-        batch_nnote= np.zeros((batch_size, vecLen), dtype=np.bool)
-        batch_ndelta=np.zeros((batch_size, maxdelta), dtype=np.bool)
+        if train_on_batch:
+            batch_note = np.zeros((batch_size, segLen, vecLen), dtype=np.bool)
+            batch_delta= np.zeros((batch_size, segLen, maxdelta), dtype=np.bool)
+            batch_nnote= np.zeros((batch_size, vecLen), dtype=np.bool)
+            batch_ndelta=np.zeros((batch_size, maxdelta), dtype=np.bool)
         for i, entries in enumerate(minibatch):
             state_note, state_delta, action_note, action_delta, reward_note, reward_delta,  next_state_note, next_state_delta, done = entries
             target_note, target_delta = self.model.predict([state_note, state_delta])
@@ -96,11 +97,15 @@ class DQNAgent:
                 target_note[0][action_note] = reward_note + self.gamma * t_note[0][np.argmax(a_note[0])]
                 target_delta[0][action_delta] = reward_delta + self.gamma * t_delta[0][np.argmax(a_delta[0])]
 
-            batch_note[i,:,:] = state_note[0]
-            batch_delta[i,:,:]= state_delta[0]
-            batch_nnote[i,:]= target_note[0]
-            batch_ndelta[i,:]=target_delta[0]
-        self.model.fit([batch_note, batch_delta], [batch_nnote, batch_ndelta], epochs=1, verbose=0) ## a minibatch
+            if train_on_batch:
+                batch_note[i,:,:] = state_note[0]
+                batch_delta[i,:,:]= state_delta[0]
+                batch_nnote[i,:]= target_note[0]
+                batch_ndelta[i,:]=target_delta[0]
+            else:
+                self.model.fit([state_note, state_delta], [target_note, target_delta], epochs=1, verbose=0) ## a minibatch
+        if train_on_batch:
+            self.model.fit([batch_note, batch_delta], [batch_nnote, batch_ndelta], epochs=1, verbose=0) ## a minibatch
         if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
 
