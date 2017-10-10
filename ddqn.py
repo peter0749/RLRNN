@@ -278,4 +278,4 @@ if __name__ == "__main__":
         if len(agent.memory) > batch_size:
             agent.replay(batch_size)
         if e % 10 == 0:
-            agent.save("./save/melody-ddqn.h5")
+            agent.save("./save/melody-ddqn-{}-{:.2}-{:.2}.h5".format(e, tns/time, tds/time))
