@@ -229,14 +229,17 @@ class rewardSystem:
             ## determine
             diffLastNote = abs(action_note - state_idx_note[-1])
             reward_note += self.scale(diffLastNote)
-            lrsi = state_idx_note
-            lrsNote_old = lrs(lrsi)
-            lrsi.append(action_note)
-            lrsNote_new = lrs(lrsi)
-            if lrsNote_new>=16:
-                reward_note-=50
-            else: ## <16
-                reward_note += 10*(lrsNote_new- lrsNote_old)
+            try:
+                lrsi = state_idx_note
+                lrsNote_old = lrs(lrsi)
+                lrsi.append(action_note)
+                lrsNote_new = lrs(lrsi)
+                if lrsNote_new>=16:
+                    reward_note-=50
+                else: ## <16
+                    reward_note += 10*(lrsNote_new- lrsNote_old)
+            except:
+                pass
             reward_delta += self.countFinger(action_delta, state_idx_delta)*10
 
         self.state_note = np.roll(self.state_note, -1, axis=1)
