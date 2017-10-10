@@ -225,7 +225,7 @@ class rewardSystem:
     def sameTrack(self, a, b):
         return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
     def reward(self, action_note, action_delta):
-        done = False
+        done = 0
         p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
         pitchStyleReward = math.log(p_n[0][action_note])
         tickStyleReward = math.log(p_d[0][action_delta])
@@ -235,7 +235,7 @@ class rewardSystem:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
             if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
-                done = True ## good end
+                done = 1 ## good end give award
                 reward_note+=10
             reward_note += self.countSameNote(action_note, state_idx_note)
             if self.sameTrack(action_note, state_idx_note[-1]):
@@ -246,8 +246,7 @@ class rewardSystem:
                 lrsNote_old = lrs(lrsi)
                 lrsi.append(action_note)
                 if detectAnnoyingLoop(lrsi,8):
-                    done = True ## bad end
-                    reward_note-=50
+                    done = -1 ## bad end, all efforts in vain
                 else:
                     lrsNote_new = lrs(lrsi)
                     reward_note += 10*(lrsNote_new- lrsNote_old)
@@ -267,9 +266,9 @@ class rewardSystem:
         self.state_delta[0,-1,action_delta] = 1
         if self.firstNote is None:
             self.firstNote = action_note
-        reward_note = reward_note*self.c+self.d*pitchStyleReward
+        reward_note = -10 if done<0 else reward_note*self.c+self.d*pitchStyleReward
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
-        return max(-1.,min(1.,reward_note)), max(-1.,min(1.,reward_delta)), done
+        return max(-1.,min(1.,reward_note)), max(-1.,min(1.,reward_delta)), done!=0
 
 
 if __name__ == "__main__":
