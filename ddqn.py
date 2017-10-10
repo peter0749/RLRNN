@@ -245,8 +245,9 @@ class rewardSystem:
                 lrsi.append(action_note)
                 if detectAnnoyingLoop(lrsi,8):
                     reward_note-=50
-                lrsNote_new = lrs(lrsi)
-                reward_note += 10*(lrsNote_new- lrsNote_old)
+                else:
+                    lrsNote_new = lrs(lrsi)
+                    reward_note += 10*(lrsNote_new- lrsNote_old)
             except:
                 pass
             if action_note<pianoKeys: ## main
