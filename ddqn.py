@@ -24,7 +24,7 @@ drop_rate=0.2
 class DQNAgent:
     def __init__(self):
         self.memory = deque(maxlen=2000)
-        self.gamma = 0.95    # discount rate
+        self.gamma = 0.8    # discount rate
         self.epsilon = 1.0  # exploration rate
         self.epsilon_min = 0.01
         self.epsilon_decay = 0.99
@@ -253,9 +253,9 @@ class rewardSystem:
 if __name__ == "__main__":
     agent = DQNAgent()
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.9)
+    rewardSys = rewardSystem(0.001)
     done = False
-    batch_size = 32
+    batch_size = 64
 
     for e in range(EPISODES):
         rewardSys.reset()
