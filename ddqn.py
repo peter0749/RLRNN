@@ -233,7 +233,7 @@ class rewardSystem:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
             if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
-                done = True
+                done = True ## good end
                 reward_note+=10
             reward_note += self.countSameNote(action_note, state_idx_note)
             if self.sameTrack(action_note, state_idx_note[-1]):
@@ -244,6 +244,7 @@ class rewardSystem:
                 lrsNote_old = lrs(lrsi)
                 lrsi.append(action_note)
                 if detectAnnoyingLoop(lrsi,8):
+                    done = True ## bad end
                     reward_note-=50
                 else:
                     lrsNote_new = lrs(lrsi)
