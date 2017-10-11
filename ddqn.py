@@ -318,6 +318,8 @@ if __name__ == "__main__":
         for time in range(512):
             action_note, action_delta = agent.act([snote, sdelta])
             reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False)
+            if time % 64 == 0:
+                sys.stderr.write('pitch: {:.2}, tick: {:.2}\n'.format(reward_note, reward_delta))
             tns += reward_note
             tds += reward_delta
             nnote, ndelta = rewardSys.get_state()
@@ -325,8 +327,6 @@ if __name__ == "__main__":
             snote, sdelta = nnote, ndelta
             if done:
                 agent.update_target_model()
-                sys.stderr.write("episode: {}/{}, time: {}, e: {:.2}, avg_pitch_score: {:.2}, avg_tick_score: {:.2}\n"
-                      .format(e, EPISODES, time+1, agent.epsilon, tns/(time+1), tds/(time+1)))
                 break
         if len(agent.memory) > batch_size:
             agent.replay(batch_size, train_on_batch=True)
