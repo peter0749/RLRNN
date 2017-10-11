@@ -336,7 +336,7 @@ if __name__ == "__main__":
                 snote, sdelta = nnote, ndelta
                 if done or reward_note>-0.1:
                     agent.update_target_model()
-                    sys.stderr.write('Target network has been updated.')
+                    sys.stderr.write('Target network has been updated.\n')
                     break
             if len(agent.memory) > batch_size:
                 agent.replay(batch_size)
