@@ -256,11 +256,11 @@ class rewardSystem:
             if verbose:
                 sys.stderr.write('lrs changed: '+str(diff)+'\n')
             if diff>0:
-                if lrsNote_new<=16:
+                if lrsNote_new<=8:
                     reward_note += 2*diff
                 else:
                     reward_note -= 5*diff
-                    done = True
+            done = True if lrsNote_new>8 else False
             if action_note<pianoKeys: ## main
                 reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 3)
             else: ## accompany
