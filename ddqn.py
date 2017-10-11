@@ -319,8 +319,9 @@ if __name__ == "__main__":
 
     with open('./log.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
+        rewardSys.reset() ## initial state
         for e in range(EPISODES):
-            rewardSys.reset()
+            #rewardSys.reset() ## not reset -> infinity melodies
             snote, sdelta = rewardSys.get_state()
             tns = 0 ## total pitch score
             tds = 0 ## total tick score
