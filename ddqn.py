@@ -10,8 +10,6 @@ from keras.optimizers import Adam, RMSprop
 from keras import backend as K
 from keras.models import load_model
 from attention_block import SoftAttentionBlock
-from itertools import groupby
-from operator import itemgetter
 
 EPISODES = 5000
 segLen=48
@@ -222,8 +220,6 @@ class rewardSystem:
         elif diffLastNote==12 and delta==0: ## full 8
             return 1
         return 0
-    def detectAnnoyingLoop(self, noteSeg, l):
-        return np.array_equal(noteSeg[0,-l:,:], noteSeg[0,-2*l:-l,:])
     def sameTrack(self, a, b):
         return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
     def reward(self, action_note, action_delta, verbose=False):
@@ -255,7 +251,9 @@ class rewardSystem:
                 lrsNote_old = lrs(lrsi)
                 lrsi.append(action_note)
                 lrsNote_new = lrs(lrsi)
-                reward_note += 2*(lrsNote_new- lrsNote_old)
+                diff = lrsNote_new - lrsNote_old
+                if diff>0:
+                    reward_note += 2*diff if lrsNote_new<=16 else -2*diff
             except:
                 pass
             if action_note<pianoKeys: ## main
@@ -272,9 +270,6 @@ class rewardSystem:
         self.state_delta[0,-1,action_delta] = 1
         if self.firstNote is None:
             self.firstNote = action_note
-        if self.detectAnnoyingLoop(self.state_note, 8):
-            done = True ## bad end
-            reward_note = -20
         if verbose:
             sys.stderr.write("reward_note = %d, %.2f, %s\n" % (reward_note, pitchStyleReward, "T" if done else "F"))
             sys.stderr.write("reward_delta = %d, %.2f\n" % (reward_delta, tickStyleReward))
@@ -297,7 +292,8 @@ if __name__ == "__main__":
         tds = 0 ## total tick score
         for time in range(500):
             action_note, action_delta = agent.act([snote, sdelta])
-            reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False)
+            reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=True)
+            #reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta)
             tns += reward_note
             tds += reward_delta
             nnote, ndelta = rewardSys.get_state()
