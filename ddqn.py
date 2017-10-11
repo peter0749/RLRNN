@@ -256,11 +256,11 @@ class rewardSystem:
             if verbose:
                 sys.stderr.write('lrs changed: '+str(diff)+'\n')
             if diff>0:
-                if lrsNote_new<=12:
+                if lrsNote_new<=8:
                     reward_note += 2*diff
                 else:
                     reward_note -= 5*diff
-            if lrsNote_new>12:
+            if lrsNote_new>8:
                 done = True ## bad end
             if action_note<pianoKeys: ## main
                 reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 3)
@@ -298,8 +298,7 @@ if __name__ == "__main__":
         tds = 0 ## total tick score
         for time in range(500):
             action_note, action_delta = agent.act([snote, sdelta])
-            #reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=True)
-            reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta)
+            reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False)
             tns += reward_note
             tds += reward_delta
             nnote, ndelta = rewardSys.get_state()
@@ -311,6 +310,6 @@ if __name__ == "__main__":
                       .format(e, EPISODES, time+1, agent.epsilon, tns/(time+1), tds/(time+1)))
                 break
         if len(agent.memory) > batch_size:
-            agent.replay(batch_size)
+            agent.replay(batch_size, train_on_batch=True)
         if e % 10 == 0:
             agent.save("./save/melody-ddqn-{}-{:.2}-{:.2}.h5".format(e, tns/time, tds/time))
