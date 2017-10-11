@@ -248,16 +248,14 @@ class rewardSystem:
             if not idx is None:
                 diffLastNote = abs(action_note - state_idx_note[idx])
                 reward_note += self.scale(diffLastNote, action_delta)
-            try:
-                lrsi = state_idx_note
-                lrsNote_old = lrs(lrsi)
-                lrsi.append(action_note)
-                lrsNote_new = lrs(lrsi)
-                diff = lrsNote_new - lrsNote_old
-                if diff>0:
-                    reward_note += 2*diff if lrsNote_new<=16 else -5*diff
-            except:
-                pass
+            lrsi = state_idx_note
+            lrsNote_old = lrs(lrsi)
+            lrsi.append(action_note)
+            lrsNote_new = lrs(lrsi)
+            diff = lrsNote_new - lrsNote_old
+            sys.stderr.write('diff: '+str(diff)+'\n')
+            if diff>0:
+                reward_note += 2*diff if lrsNote_new<=16 else -5*diff
             if action_note<pianoKeys: ## main
                 reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 3)
             else: ## accompany
