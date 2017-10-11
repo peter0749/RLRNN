@@ -266,10 +266,7 @@ class rewardSystem:
             if lrsNote_new>8:
                 done = True ## bad end
             ## not complete yet...
-            if action_note<pianoKeys: ## main
-                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
-            else: ## accompany
-                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
+            reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
 
         self.state_note = np.roll(self.state_note, -1, axis=1)
         self.state_note[0,-1,:] = 0
