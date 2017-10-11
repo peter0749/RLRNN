@@ -23,12 +23,13 @@ hidden_delta=128
 hidden_note=256
 drop_rate=0.2
 
-def softmaxSample(a):
+def softmaxSample(a, eps=1e-9):
     '''
     ref: https://github.com/itaicaspi/keras-dqn-doom, and https://stackoverflow.com/questions/34968722/softmax-function-python
     '''
     e_a = np.exp(a - np.max(a))
     preds = e_a / e_a.sum(axis=0)
+    preds = preds / (np.sum(preds)+eps)
     return np.argmax(np.random.multinomial(1, preds, 1))
 
 class DQNAgent:
@@ -326,4 +327,4 @@ if __name__ == "__main__":
         if len(agent.memory) > batch_size:
             agent.replay(batch_size, train_on_batch=True)
         if e % 10 == 0:
-            agent.save("./save/melody-ddqn-{}-{:.2}-{:.2}.h5".format(e, tns/time, tds/time))
+            agent.save("./save/melody-ddqn-{}.h5".format(e))
