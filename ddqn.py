@@ -236,7 +236,6 @@ class rewardSystem:
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
             if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
                 done = True ## good end
-                reward_note+=5
             reward_note += self.countSameNote(action_note, state_idx_note)
             idx = None
             for i, v in enumerate(reversed(state_idx_note)):
@@ -285,9 +284,9 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = DQNAgent(0.3)
+    agent = DQNAgent(0.9)
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.01,0.05)
+    rewardSys = rewardSystem(0.001,0.05)
     done = False
     batch_size = 64
 
