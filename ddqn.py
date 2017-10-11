@@ -121,7 +121,7 @@ class DQNAgent:
                 self.model.fit([state_note, state_delta], [target_note, target_delta], epochs=1, verbose=0) ## a minibatch
         if train_on_batch:
             self.model.fit([batch_note, batch_delta], [batch_nnote, batch_ndelta], epochs=1, verbose=0) ## a minibatch
-        if self.epsilon > self.epsilon_min:
+        if self.epsilon > self.epsilon_min and self.policy!='softmax':
             self.epsilon *= self.epsilon_decay
 
     def load(self, name):
