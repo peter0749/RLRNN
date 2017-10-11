@@ -26,7 +26,7 @@ drop_rate=0.2
 class DQNAgent:
     def __init__(self, eps):
         self.memory = deque(maxlen=2000)
-        self.gamma = 0.8    # discount rate
+        self.gamma = 0.7    # discount rate
         self.epsilon = eps  # exploration rate
         self.epsilon_min = 0.001 ## large eps
         self.epsilon_decay = 0.99
@@ -237,6 +237,8 @@ class rewardSystem:
             if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
                 done = True ## good end
             reward_note += self.countSameNote(action_note, state_idx_note)
+            '''
+            ## scale score, not complete yet...
             idx = None
             for i, v in enumerate(reversed(state_idx_note)):
                 if self.sameTrack(v, action_note):
@@ -247,6 +249,8 @@ class rewardSystem:
             if not idx is None:
                 diffLastNote = abs(action_note - state_idx_note[idx])
                 reward_note += self.scale(diffLastNote, action_delta)
+            '''
+            ## check if generate longer longest repeat substring
             lrsi = state_idx_note
             lrsNote_old = lrs(lrsi)
             lrsi.append(action_note)
@@ -254,15 +258,16 @@ class rewardSystem:
             diff = lrsNote_new - lrsNote_old
             if verbose:
                 sys.stderr.write('lrs changed: '+str(diff)+'\n')
-            if diff>0:
+            if diff>0: ## check update
                 if lrsNote_new<=8:
                     reward_note += 2*diff
-                else:
-                    reward_note -= 5*diff
+                else: ## exceed limits
+                    reward_note -= 5*diff ## penalty
             if lrsNote_new>8:
                 done = True ## bad end
+            ## not complete yet...
             if action_note<pianoKeys: ## main
-                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 3)
+                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
             else: ## accompany
                 reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
 
@@ -284,9 +289,9 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = DQNAgent(0.9)
+    agent = DQNAgent(0.95)
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.001,0.05)
+    rewardSys = rewardSystem(0.01,0.05)
     done = False
     batch_size = 64
 
