@@ -235,7 +235,7 @@ class rewardSystem:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
             if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
-                done = True ## good end
+                #done = True ## good end
                 reward_note+=5
             reward_note += self.countSameNote(action_note, state_idx_note)
             idx = None
@@ -253,9 +253,14 @@ class rewardSystem:
             lrsi.append(action_note)
             lrsNote_new = lrs(lrsi)
             diff = lrsNote_new - lrsNote_old
-            sys.stderr.write('diff: '+str(diff)+'\n')
+            if verbose:
+                sys.stderr.write('lrs changed: '+str(diff)+'\n')
             if diff>0:
-                reward_note += 2*diff if lrsNote_new<=16 else -5*diff
+                if lrsNote_new<=16:
+                    reward_note += 2*diff
+                else:
+                    reward_note -= 5*diff
+                    done = True
             if action_note<pianoKeys: ## main
                 reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 3)
             else: ## accompany
