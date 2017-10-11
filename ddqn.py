@@ -94,7 +94,7 @@ class DQNAgent:
     def remember(self, state_note, state_delta, action_note, action_delta, reward_note, reward_delta,  next_state_note, next_state_delta, done):
         self.memory.append((state_note, state_delta, action_note, action_delta, reward_note, reward_delta,  next_state_note, next_state_delta, done))
 
-    def act(self, state):
+    def act(self, state): ## Using CPU
         if self.policy=='softmax': ## softmax policy
             with tf.device('/cpu:0'):
                 act_note, act_delta = self.model.predict(state)
@@ -106,38 +106,29 @@ class DQNAgent:
                 act_note, act_delta = self.model.predict(state)
             return np.argmax(act_note[0]), np.argmax(act_delta[0])  # returns action
 
-    def replay(self, batch_size, train_on_batch=False):
+    def replay(self, batch_size): ## Using GPU
         minibatch = random.sample(self.memory, batch_size)
-        if train_on_batch:
-            batch_note = np.zeros((batch_size, segLen, vecLen), dtype=np.bool)
-            batch_delta= np.zeros((batch_size, segLen, maxdelta), dtype=np.bool)
-            batch_nnote= np.zeros((batch_size, vecLen), dtype=np.bool)
-            batch_ndelta=np.zeros((batch_size, maxdelta), dtype=np.bool)
+        batch_note = np.zeros((batch_size, segLen, vecLen), dtype=np.bool)
+        batch_delta= np.zeros((batch_size, segLen, maxdelta), dtype=np.bool)
+        #state_note(0), state_delta(1), action_note(2), action_delta(3), reward_note(4), reward_delta(5),  next_state_note(6), next_state_delta(7), done(8) = entries
         for i, entries in enumerate(minibatch):
-            state_note, state_delta, action_note, action_delta, reward_note, reward_delta,  next_state_note, next_state_delta, done = entries
-            with tf.device('/cpu:0'):
-                target_note, target_delta = self.model.predict([state_note, state_delta])
-            if done:
-                target_note[0][action_note] = reward_note
-                target_delta[0][action_delta] = reward_delta
-            else:
-                with tf.device('/cpu:0'):
-                    a_note, a_delta = self.model.predict([next_state_note, next_state_delta])
-                    t_note, t_delta = self.target_model.predict([next_state_note, next_state_delta])
-                target_note[0][action_note] = reward_note + self.gamma * t_note[0][np.argmax(a_note[0])]
-                target_delta[0][action_delta] = reward_delta + self.gamma * t_delta[0][np.argmax(a_delta[0])]
-
-            if train_on_batch:
-                batch_note[i,:,:] = state_note[0]
-                batch_delta[i,:,:]= state_delta[0]
-                batch_nnote[i,:]= target_note[0]
-                batch_ndelta[i,:]=target_delta[0]
-            else:
-                with tf.device('/cpu:0'):
-                    self.model.fit([state_note, state_delta], [target_note, target_delta], epochs=1, verbose=0) ## a minibatch
-        if train_on_batch:
-            with tf.device('/gpu:0'):
-                self.model.fit([batch_note, batch_delta], [batch_nnote, batch_ndelta], epochs=1, verbose=0) ## a minibatch
+            batch_note[i,:,:] = entries[0][0] ## state_note
+            batch_delta[i,:,:]= entries[1][0] ## state_delta
+        state_notes = batch_note ## a batch of state_note
+        state_deltas= batch_delta
+        with tf.device('/gpu:0'):
+            target_notes, target_deltas = self.model.predict([batch_note, batch_delta]) ## get a batch of target
+        for i, entries in enumerate(minibatch):
+            batch_note[i,:,:] = entries[6][0] ## next_state_note
+            batch_delta[i,:,:]= entries[7][0] ## next_state_delta
+        with tf.device('/gpu:0'):
+            a_notes, a_deltas = self.model.predict([batch_note, batch_delta]) ## get a batch of q-value of new model
+            t_notes, t_deltas = self.target_model.predict([batch_note, batch_delta]) ## old model
+        for i, entries in enumerate(minibatch):
+            target_notes[i][entries[2]] = entries[4] + (self.gamma*t_notes[i][np.argmax(a_notes[i])] if entries[8] else 0) ## target_note()(act_note) = rew_note
+            target_deltas[i][entries[3]] = entries[5]+ (self.gamma*t_deltas[i][np.argmax(a_deltas[i])] if entries[8] else 0) ## note -> delta ''
+        with tf.device('/gpu:0'):
+            self.model.fit([state_notes, state_deltas], [target_notes, target_deltas], epochs=1, verbose=0) ## a minibatch
         if self.epsilon > self.epsilon_min and self.policy!='softmax':
             self.epsilon *= self.epsilon_decay
 
@@ -337,10 +328,11 @@ if __name__ == "__main__":
                 nnote, ndelta = rewardSys.get_state()
                 agent.remember(snote, sdelta, action_note, action_delta, reward_note, reward_delta, nnote, ndelta, done)
                 snote, sdelta = nnote, ndelta
-                if done:
+                if done or reward_note<-0.3:
                     agent.update_target_model()
+                    sys.stderr.write('Target network has been updated.')
                     break
             if len(agent.memory) > batch_size:
-                agent.replay(batch_size, train_on_batch=True)
+                agent.replay(batch_size)
             if e % 10 == 0:
                 agent.save("./save/melody-ddqn-{}.h5".format(e))
