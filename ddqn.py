@@ -249,8 +249,8 @@ class rewardSystem:
         if np.sum(self.state_note)==segLen and np.sum(self.state_delta)==segLen:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
-            if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
-                done = True ## good end
+            #if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
+                #done = True ## good end
             reward_note += self.countSameNote(action_note, state_idx_note)
             ## scale score, not complete yet...
             idx = None
@@ -272,12 +272,9 @@ class rewardSystem:
             if verbose:
                 sys.stderr.write('lrs changed: '+str(diff)+'\n')
             if diff>0: ## check update
-                if lrsNote_new<=8:
-                    reward_note += 2*diff
-                else: ## exceed limits
-                    reward_note -= 5*diff ## penalty
+                reward_note += 2*diff
             if lrsNote_new>8:
-                done = True ## bad end
+                done = True ## bad end, very bad...
             ## not complete yet...
             if action_note<pianoKeys: ## main
                 reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
@@ -296,7 +293,7 @@ class rewardSystem:
         if verbose:
             sys.stderr.write("reward_note = %d, %.2f, %s\n" % (reward_note, pitchStyleReward, "T" if done else "F"))
             sys.stderr.write("reward_delta = %d, %.2f\n" % (reward_delta, tickStyleReward))
-        reward_note = reward_note*self.c+self.d*pitchStyleReward
+        reward_note = -1. if done else reward_note*self.c+self.d*pitchStyleReward
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
         return max(-1.,min(1.,reward_note)), max(-1.,min(1.,reward_delta)), done
 
