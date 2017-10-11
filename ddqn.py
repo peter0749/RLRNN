@@ -210,7 +210,7 @@ class rewardSystem:
         return self.state_note, self.state_delta
     def scale(self, diffLastNote, delta):
         if diffLastNote==4: ## western
-            return 4
+            return 3
         elif diffLastNote==8:
             return 2
         elif diffLastNote==7: ## chinese
@@ -237,7 +237,6 @@ class rewardSystem:
             if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
                 done = True ## good end
             reward_note += self.countSameNote(action_note, state_idx_note)
-            '''
             ## scale score, not complete yet...
             idx = None
             for i, v in enumerate(reversed(state_idx_note)):
@@ -249,7 +248,6 @@ class rewardSystem:
             if not idx is None:
                 diffLastNote = abs(action_note - state_idx_note[idx])
                 reward_note += self.scale(diffLastNote, action_delta)
-            '''
             ## check if generate longer longest repeat substring
             lrsi = state_idx_note
             lrsNote_old = lrs(lrsi)
@@ -266,7 +264,10 @@ class rewardSystem:
             if lrsNote_new>8:
                 done = True ## bad end
             ## not complete yet...
-            reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
+            if action_note<pianoKeys: ## main
+                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
+            else: ## accompany
+                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
 
         self.state_note = np.roll(self.state_note, -1, axis=1)
         self.state_note[0,-1,:] = 0
@@ -286,7 +287,7 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = DQNAgent(0.95)
+    agent = DQNAgent(0.99)
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.01,0.05)
     done = False
