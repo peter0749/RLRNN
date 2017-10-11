@@ -10,6 +10,8 @@ from keras.optimizers import Adam, RMSprop
 from keras import backend as K
 from keras.models import load_model
 from attention_block import SoftAttentionBlock
+from itertools import groupby
+from operator import itemgetter
 
 EPISODES = 5000
 segLen=48
@@ -253,7 +255,7 @@ class rewardSystem:
                 lrsNote_new = lrs(lrsi)
                 diff = lrsNote_new - lrsNote_old
                 if diff>0:
-                    reward_note += 2*diff if lrsNote_new<=16 else -2*diff
+                    reward_note += 2*diff if lrsNote_new<=16 else -5*diff
             except:
                 pass
             if action_note<pianoKeys: ## main
