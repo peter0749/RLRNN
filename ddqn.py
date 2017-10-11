@@ -13,7 +13,7 @@ from attention_block import SoftAttentionBlock
 from itertools import groupby
 from operator import itemgetter
 
-EPISODES = 5000
+EPISODES = 8000
 segLen=48
 track_num=2
 pianoKeys=60
@@ -28,8 +28,8 @@ class DQNAgent:
         self.memory = deque(maxlen=2000)
         self.gamma = 0.7    # discount rate
         self.epsilon = eps  # exploration rate
-        self.epsilon_min = 0.001 ## large eps
-        self.epsilon_decay = 0.99
+        self.epsilon_min = 0.7 ## large eps
+        self.epsilon_decay = 0.995
         self.learning_rate = 0.0001
         self.model = self._build_model()
         self.target_model = self._build_model()
@@ -298,7 +298,7 @@ if __name__ == "__main__":
         snote, sdelta = rewardSys.get_state()
         tns = 0 ## total pitch score
         tds = 0 ## total tick score
-        for time in range(500):
+        for time in range(512):
             action_note, action_delta = agent.act([snote, sdelta])
             reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False)
             tns += reward_note
