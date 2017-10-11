@@ -23,14 +23,23 @@ hidden_delta=128
 hidden_note=256
 drop_rate=0.2
 
+def softmaxSample(a):
+    '''
+    ref: https://github.com/itaicaspi/keras-dqn-doom, and https://stackoverflow.com/questions/34968722/softmax-function-python
+    '''
+    e_a = np.exp(a - np.max(a))
+    preds = e_a / e_a.sum(axis=0)
+    return np.argmax(np.random.multinomial(1, preds, 1))
+
 class DQNAgent:
-    def __init__(self, eps):
+    def __init__(self, policy='softmax'):
         self.memory = deque(maxlen=2000)
         self.gamma = 0.7    # discount rate
-        self.epsilon = eps  # exploration rate
+        self.epsilon = 0.99  # exploration rate
         self.epsilon_min = 0.7 ## large eps
         self.epsilon_decay = 0.995
         self.learning_rate = 0.0001
+        self.policy=policy
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
@@ -75,10 +84,14 @@ class DQNAgent:
         self.memory.append((state_note, state_delta, action_note, action_delta, reward_note, reward_delta,  next_state_note, next_state_delta, done))
 
     def act(self, state):
-        if np.random.rand() <= self.epsilon:
-            return random.randrange(vecLen), random.randrange(maxdelta)
-        act_note, act_delta = self.model.predict(state)
-        return np.argmax(act_note[0]), np.argmax(act_delta[0])  # returns action
+        if self.policy=='softmax': ## softmax policy
+            act_note, act_delta = self.model.predict(state)
+            return softmaxSample(act_note[0]), softmaxSample(act_delta[0])
+        else: ## epsilon-greedy
+            if np.random.rand() <= self.epsilon:
+                return random.randrange(vecLen), random.randrange(maxdelta)
+            act_note, act_delta = self.model.predict(state)
+            return np.argmax(act_note[0]), np.argmax(act_delta[0])  # returns action
 
     def replay(self, batch_size, train_on_batch=False):
         minibatch = random.sample(self.memory, batch_size)
