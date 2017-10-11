@@ -47,10 +47,11 @@ class DQNAgent:
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
-        if self.policy=='softmax':
-            sys.stderr.write('Agent: Using Softmax policy\n')
-        else:
-            sys.stderr.write('Agent: E-greedy policy\n')
+        if verbose:
+            if self.policy=='softmax':
+                sys.stderr.write('Agent: Using Softmax policy\n')
+            else:
+                sys.stderr.write('Agent: E-greedy policy\n')
 
     def _huber_loss(self, target, prediction):
         # sqrt(1+error^2)-1
@@ -304,12 +305,13 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = DQNAgent(policy='softmax', verbose=True)
+    agent = DQNAgent(policy='softmax', verbose=False)
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.01,0.05)
     done = False
     batch_size = 64
 
+    print('pitch, tick')
     for e in range(EPISODES):
         rewardSys.reset()
         snote, sdelta = rewardSys.get_state()
@@ -319,7 +321,7 @@ if __name__ == "__main__":
             action_note, action_delta = agent.act([snote, sdelta])
             reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False)
             if time % 64 == 0:
-                sys.stderr.write('pitch: {:.2}, tick: {:.2}\n'.format(reward_note, reward_delta))
+                print('%.2f, %.2f' % (reward_note, reward_delta))
             tns += reward_note
             tds += reward_delta
             nnote, ndelta = rewardSys.get_state()
