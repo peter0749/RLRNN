@@ -46,6 +46,8 @@ class DQNAgent:
         self.update_target_model()
         if self.policy=='softmax':
             sys.stderr.write('Agent: Using Softmax policy\n')
+        else:
+            sys.stderr.write('Agent: E-greedy policy\n')
 
     def _huber_loss(self, target, prediction):
         # sqrt(1+error^2)-1
