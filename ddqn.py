@@ -36,7 +36,7 @@ class DQNAgent:
         self.memory = deque(maxlen=2000)
         self.gamma = 0.7    # discount rate
         self.epsilon = 0.99  # exploration rate
-        self.epsilon_min = 0.7 ## large eps
+        self.epsilon_min = 0.001 ## large eps
         self.epsilon_decay = 0.995
         self.learning_rate = 0.0001
         self.policy=policy
