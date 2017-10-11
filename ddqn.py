@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+from __future__ import print_function
 import sys
 import random
 import numpy as np
 from collections import deque
 import math
+import tensorflow as tf
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormalization
 from keras.optimizers import Adam, RMSprop
@@ -94,12 +96,14 @@ class DQNAgent:
 
     def act(self, state):
         if self.policy=='softmax': ## softmax policy
-            act_note, act_delta = self.model.predict(state)
+            with tf.device('/cpu:0'):
+                act_note, act_delta = self.model.predict(state)
             return softmaxSample(act_note[0]), softmaxSample(act_delta[0])
         else: ## epsilon-greedy
             if np.random.rand() <= self.epsilon:
                 return random.randrange(vecLen), random.randrange(maxdelta)
-            act_note, act_delta = self.model.predict(state)
+            with tf.device('/cpu:0'):
+                act_note, act_delta = self.model.predict(state)
             return np.argmax(act_note[0]), np.argmax(act_delta[0])  # returns action
 
     def replay(self, batch_size, train_on_batch=False):
@@ -111,13 +115,15 @@ class DQNAgent:
             batch_ndelta=np.zeros((batch_size, maxdelta), dtype=np.bool)
         for i, entries in enumerate(minibatch):
             state_note, state_delta, action_note, action_delta, reward_note, reward_delta,  next_state_note, next_state_delta, done = entries
-            target_note, target_delta = self.model.predict([state_note, state_delta])
+            with tf.device('/cpu:0'):
+                target_note, target_delta = self.model.predict([state_note, state_delta])
             if done:
                 target_note[0][action_note] = reward_note
                 target_delta[0][action_delta] = reward_delta
             else:
-                a_note, a_delta = self.model.predict([next_state_note, next_state_delta])
-                t_note, t_delta = self.target_model.predict([next_state_note, next_state_delta])
+                with tf.device('/cpu:0'):
+                    a_note, a_delta = self.model.predict([next_state_note, next_state_delta])
+                    t_note, t_delta = self.target_model.predict([next_state_note, next_state_delta])
                 target_note[0][action_note] = reward_note + self.gamma * t_note[0][np.argmax(a_note[0])]
                 target_delta[0][action_delta] = reward_delta + self.gamma * t_delta[0][np.argmax(a_delta[0])]
 
@@ -127,9 +133,11 @@ class DQNAgent:
                 batch_nnote[i,:]= target_note[0]
                 batch_ndelta[i,:]=target_delta[0]
             else:
-                self.model.fit([state_note, state_delta], [target_note, target_delta], epochs=1, verbose=0) ## a minibatch
+                with tf.device('/cpu:0'):
+                    self.model.fit([state_note, state_delta], [target_note, target_delta], epochs=1, verbose=0) ## a minibatch
         if train_on_batch:
-            self.model.fit([batch_note, batch_delta], [batch_nnote, batch_ndelta], epochs=1, verbose=0) ## a minibatch
+            with tf.device('/gpu:0'):
+                self.model.fit([batch_note, batch_delta], [batch_nnote, batch_ndelta], epochs=1, verbose=0) ## a minibatch
         if self.epsilon > self.epsilon_min and self.policy!='softmax':
             self.epsilon *= self.epsilon_decay
 
@@ -248,7 +256,8 @@ class rewardSystem:
         return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
     def reward(self, action_note, action_delta, verbose=False):
         done = False
-        p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
+        with tf.device('/cpu:0'):
+            p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
         pitchStyleReward = math.log(p_n[0][action_note])
         tickStyleReward = math.log(p_d[0][action_delta])
         reward_note=0
@@ -311,26 +320,27 @@ if __name__ == "__main__":
     done = False
     batch_size = 64
 
-    print('pitch, tick')
-    for e in range(EPISODES):
-        rewardSys.reset()
-        snote, sdelta = rewardSys.get_state()
-        tns = 0 ## total pitch score
-        tds = 0 ## total tick score
-        for time in range(512):
-            action_note, action_delta = agent.act([snote, sdelta])
-            reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False)
-            if time % 64 == 0:
-                print('%.2f, %.2f' % (reward_note, reward_delta))
-            tns += reward_note
-            tds += reward_delta
-            nnote, ndelta = rewardSys.get_state()
-            agent.remember(snote, sdelta, action_note, action_delta, reward_note, reward_delta, nnote, ndelta, done)
-            snote, sdelta = nnote, ndelta
-            if done:
-                agent.update_target_model()
-                break
-        if len(agent.memory) > batch_size:
-            agent.replay(batch_size, train_on_batch=True)
-        if e % 10 == 0:
-            agent.save("./save/melody-ddqn-{}.h5".format(e))
+    with open('./log.csv', 'a+', 0) as logFP: ## no-buffer logging
+        logFP.write('pitch, tick\n')
+        for e in range(EPISODES):
+            rewardSys.reset()
+            snote, sdelta = rewardSys.get_state()
+            tns = 0 ## total pitch score
+            tds = 0 ## total tick score
+            for time in range(512):
+                action_note, action_delta = agent.act([snote, sdelta])
+                reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False)
+                if time % 64 == 0:
+                    logFP.write('%.2f, %.2f\n' % (reward_note, reward_delta))
+                tns += reward_note
+                tds += reward_delta
+                nnote, ndelta = rewardSys.get_state()
+                agent.remember(snote, sdelta, action_note, action_delta, reward_note, reward_delta, nnote, ndelta, done)
+                snote, sdelta = nnote, ndelta
+                if done:
+                    agent.update_target_model()
+                    break
+            if len(agent.memory) > batch_size:
+                agent.replay(batch_size, train_on_batch=True)
+            if e % 10 == 0:
+                agent.save("./save/melody-ddqn-{}.h5".format(e))
