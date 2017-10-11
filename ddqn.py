@@ -32,7 +32,7 @@ def softmaxSample(a):
     return np.argmax(np.random.multinomial(1, preds, 1))
 
 class DQNAgent:
-    def __init__(self, policy='softmax'):
+    def __init__(self, policy='softmax', verbose=False):
         self.memory = deque(maxlen=2000)
         self.gamma = 0.7    # discount rate
         self.epsilon = 0.99  # exploration rate
@@ -43,6 +43,8 @@ class DQNAgent:
         self.model = self._build_model()
         self.target_model = self._build_model()
         self.update_target_model()
+        if self.policy=='softmax':
+            sys.stderr.write('Agent: Using Softmax policy\n')
 
     def _huber_loss(self, target, prediction):
         # sqrt(1+error^2)-1
@@ -300,7 +302,7 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = DQNAgent(0.99)
+    agent = DQNAgent(policy='softmax', verbose=True)
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.01,0.05)
     done = False
