@@ -315,7 +315,7 @@ if __name__ == "__main__":
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.01,0.05)
     done = False
-    batch_size = 64
+    batch_size = 128
 
     with open('./log.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
@@ -324,17 +324,17 @@ if __name__ == "__main__":
             snote, sdelta = rewardSys.get_state()
             tns = 0 ## total pitch score
             tds = 0 ## total tick score
-            for time in range(128):
+            for time in range(64):
                 action_note, action_delta = agent.act([snote, sdelta])
                 reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False)
-                if time % 8 == 0:
+                if time % 4 == 0:
                     logFP.write('%.2f, %.2f\n' % (reward_note, reward_delta))
                 tns += reward_note
                 tds += reward_delta
                 nnote, ndelta = rewardSys.get_state()
                 agent.remember(snote, sdelta, action_note, action_delta, reward_note, reward_delta, nnote, ndelta, done)
                 snote, sdelta = nnote, ndelta
-                if done or reward_note>-0.1:
+                if done:
                     agent.update_target_model()
                     sys.stderr.write('Target network has been updated.\n')
                     break
@@ -342,3 +342,4 @@ if __name__ == "__main__":
                 agent.replay(batch_size)
             if e % 10 == 0:
                 agent.save("./save/melody-ddqn-{}.h5".format(e))
+                agent.update_target_model() ## force update
