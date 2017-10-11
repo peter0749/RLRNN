@@ -27,9 +27,9 @@ def softmaxSample(a, eps=1e-9):
     '''
     ref: https://github.com/itaicaspi/keras-dqn-doom, and https://stackoverflow.com/questions/34968722/softmax-function-python
     '''
-    e_a = np.exp(a - np.max(a))
-    preds = e_a / e_a.sum(axis=0)
-    preds = preds / (np.sum(preds)+eps)
+    e_a = np.exp(a)
+    preds = e_a / (e_a.sum(axis=0)+eps)
+    preds = np.clip(preds, 0, 1.-eps)
     return np.argmax(np.random.multinomial(1, preds, 1))
 
 class DQNAgent:
