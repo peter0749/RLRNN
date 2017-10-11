@@ -24,11 +24,11 @@ hidden_note=256
 drop_rate=0.2
 
 class DQNAgent:
-    def __init__(self):
+    def __init__(self, eps):
         self.memory = deque(maxlen=2000)
         self.gamma = 0.8    # discount rate
-        self.epsilon = 1.0  # exploration rate
-        self.epsilon_min = 0.01 ## large eps
+        self.epsilon = eps  # exploration rate
+        self.epsilon_min = 0.001 ## large eps
         self.epsilon_decay = 0.99
         self.learning_rate = 0.0001
         self.model = self._build_model()
@@ -284,7 +284,7 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = DQNAgent()
+    agent = DQNAgent(0.3)
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.01,0.05)
     done = False
