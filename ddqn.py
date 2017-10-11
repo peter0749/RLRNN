@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+'''
+DQN architecture
+Folk from: https://github.com/keon/deep-q-learning
+'''
 from __future__ import print_function
 import os
 os.environ['KERAS_BACKEND']='tensorflow'
