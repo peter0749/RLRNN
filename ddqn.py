@@ -27,9 +27,10 @@ def softmaxSample(a, eps=1e-7):
     '''
     ref: https://github.com/itaicaspi/keras-dqn-doom, and https://stackoverflow.com/questions/34968722/softmax-function-python
     '''
+    if a.ndim != 1: raise ValueError('softmax: Only support 1-D array!')
     try:
         e_a = np.exp(a-np.max(a)) ## max trick
-        preds = e_a / (e_a.sum(axis=0)+eps) ## safe div
+        preds = e_a / (e_a.sum()+eps) ## safe div
         return np.argmax(np.random.multinomial(1, preds, 1))
     except:
         return np.argmax(a)
