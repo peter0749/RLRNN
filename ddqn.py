@@ -334,7 +334,7 @@ if __name__ == "__main__":
                 nnote, ndelta = rewardSys.get_state()
                 agent.remember(snote, sdelta, action_note, action_delta, reward_note, reward_delta, nnote, ndelta, done)
                 snote, sdelta = nnote, ndelta
-                if done or reward_note<-0.3:
+                if done or reward_note>-0.1:
                     agent.update_target_model()
                     sys.stderr.write('Target network has been updated.')
                     break
