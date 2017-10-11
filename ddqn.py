@@ -223,7 +223,7 @@ class rewardSystem:
         for v in reversed(l):
             if v==x: cnt+=1
             else: break
-        return -3*(cnt-4) if cnt>4 else 0
+        return cnt
     def get_state(self):
         return self.state_note, self.state_delta
     def scale(self, diffLastNote, delta):
@@ -252,9 +252,8 @@ class rewardSystem:
         if np.sum(self.state_note)==segLen and np.sum(self.state_delta)==segLen:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
-            #if not self.firstNote is None and self.sameTrack(self.firstNote,action_note) and abs(self.firstNote-action_note)%12==0:
-                #done = True ## good end
-            reward_note += self.countSameNote(action_note, state_idx_note)
+            if self.countSameNote(action_note, state_idx_note)>4:
+                done = True ## bad end
             ## scale score, not complete yet...
             idx = None
             for i, v in enumerate(reversed(state_idx_note)):
