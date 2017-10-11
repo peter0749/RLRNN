@@ -10,6 +10,8 @@ from keras.optimizers import Adam, RMSprop
 from keras import backend as K
 from keras.models import load_model
 from attention_block import SoftAttentionBlock
+from itertools import groupby
+from operator import itemgetter
 
 EPISODES = 5000
 segLen=48
