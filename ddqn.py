@@ -350,7 +350,7 @@ class rewardSystem:
 if __name__ == "__main__":
     agent = DQNAgent(policy='softmax', verbose=True)
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.5,1) ## more sensitive
+    rewardSys = rewardSystem(0.05,0.1) ## more sensitive
     done = False
     batch_size = 64
     batch_n = 16
