@@ -327,7 +327,7 @@ if __name__ == "__main__":
     done = False
     batch_size = 128
 
-    with open('./log.csv', 'a+', 0) as logFP: ## no-buffer logging
+    with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
         rewardSys.reset() ## initialize states
         for e in xrange(EPISODES):
@@ -346,4 +346,4 @@ if __name__ == "__main__":
             sys.stderr.write('episode: %d Learning from past...' % e)
             agent.train()
             if e % 10 == 0:
-                agent.save("./save/melody-ddqn-{}.h5".format(e))
+                agent.save("./pg/melody-ddqn-{}.h5".format(e))
