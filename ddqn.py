@@ -348,8 +348,8 @@ if __name__ == "__main__":
                     sys.stderr.write('Target network has been updated.\n')
                     break
             if len(agent.memory) > batch_size:
+                sys.stderr.write('Learning from past...')
                 for t in xrange(batch_n): ## replay for batch_n times
-                    sys.stderr.write('Learning from past...')
                     agent.replay(batch_size)
                 sys.stderr.write('%.2f\n' % agent.decay())
                 if e % 10 == 0:
