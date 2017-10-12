@@ -345,7 +345,8 @@ if __name__ == "__main__":
                 snote, sdelta = nnote, ndelta
                 if done:
                     agent.update_target_model()
-                    sys.stderr.write('Target network has been updated.\n')
+                    sys.stderr.write('Target network has been updated. Reset stage.\n')
+                    rewardSys.reset() ## not reset -> infinity melodies
                     break
             if len(agent.memory) > batch_size:
                 sys.stderr.write('Learning from past...')
