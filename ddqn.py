@@ -349,7 +349,7 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = DQNAgent(policy='E-greedy', verbose=True)
+    agent = DQNAgent(policy='softmax', verbose=True)
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.1,0.1) ## more sensitive
     done = False
