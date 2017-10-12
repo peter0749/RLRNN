@@ -34,7 +34,7 @@ hidden_delta=128
 hidden_note=256
 drop_rate=0.2
 
-def softmaxSample(a, temp=0.7, eps=1e-7):
+def softmaxSample(a, temp=0.7):
     '''
     ref: https://github.com/itaicaspi/keras-dqn-doom, and https://stackoverflow.com/questions/34968722/softmax-function-python
     '''
@@ -137,7 +137,7 @@ class DQNAgent:
             self.model.fit([state_notes, state_deltas], [target_notes, target_deltas], epochs=1, verbose=0) ## a minibatch
 
     def decay(self):
-        if self.epsilon > self.epsilon_min and self.policy!='softmax':
+        if self.epsilon > self.epsilon_min:
             self.epsilon *= self.epsilon_decay
         return self.epsilon
 
@@ -376,10 +376,10 @@ if __name__ == "__main__":
                     rewardSys.reset() ## new initial state
                     break
             if len(agent.memory) > batch_size:
-                sys.stderr.write('Learning from past...')
+                sys.stderr.write('episode: %d Learning from past...' % e)
                 for t in xrange(batch_n): ## replay for batch_n times
                     agent.replay(batch_size)
-                sys.stderr.write('%.2f\n' % agent.decay())
+                sys.stderr.write(', eps: %.2f\n' % agent.decay())
                 if e % 10 == 0:
                     agent.save("./save/melody-ddqn-{}.h5".format(e))
                     agent.update_target_model() ## force update
