@@ -239,7 +239,6 @@ class rewardSystem:
     def get_state(self):
         return self.state_note, self.state_delta
     def scale(self, diffLastNote, delta):
-        '''
         if diffLastNote==4: ## western
             return 3
         elif diffLastNote==8:
@@ -252,9 +251,6 @@ class rewardSystem:
             return -5
         elif diffLastNote==12 and delta==0: ## full 8
             return 1
-        '''
-        if diffLastNote>8:
-            return -2 if delta==0 else -1
         return 0
     def sameTrack(self, a, b):
         return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
@@ -320,7 +316,7 @@ class rewardSystem:
 if __name__ == "__main__":
     agent = DQNAgent(policy='E-greedy', verbose=True)
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.01,0.05)
+    rewardSys = rewardSystem(0.1,0.1) ## more sensitive
     done = False
     batch_size = 32
     batch_n = 16
@@ -335,7 +331,7 @@ if __name__ == "__main__":
             tds = 0 ## total tick score
             for time in range(64):
                 action_note, action_delta = agent.act([snote, sdelta])
-                reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False)
+                reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=True)
                 if time % 4 == 0:
                     logFP.write('%.2f, %.2f\n' % (reward_note, reward_delta))
                 tns += reward_note
