@@ -255,6 +255,23 @@ class rewardSystem:
         return 0
     def sameTrack(self, a, b):
         return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
+    def checkAccompanyDist(self, delta, notes, deltas):
+        accumTick=delta
+        i = None
+        for ti, v in enumerate(reversed(deltas)):
+            i = segLen-1-ti
+            if notes[i]>=pianoKeys: break ## find accompany
+            i = None
+            accumTick += v
+        return accumTick, i
+    def findRootNote(self, idx, notes, deltas):
+        rootN = 1e9
+        for i in reversed(xrange(idx+1)):
+            if notes[i]>=pianoKeys:
+                rootN = min(rootN, notes[i]-pianoKeys)
+                if deltas[i]>0: break
+            else: break
+        return rootN
     def reward(self, action_note, action_delta, verbose=False):
         done = False
         with tf.device('/cpu:0'):
@@ -268,11 +285,25 @@ class rewardSystem:
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
             if self.countSameNote(action_note, state_idx_note)>4:
                 done = True ## bad end
+            if action_note<pianoKeys: ## is main melody
+                dist, idx = self.checkAccompanyDist(action_delta, state_idx_note, state_idx_delta)
+                if dist>64: ## 一小節
+                    reward_delta -= 8 ## too far
+                if not idx is None: ## idx points to a nearest accompany note
+                    ## find root note
+                    rootN = self.findRootNote(idx, state_idx_note, state_idx_delta)
+                    dist = abs(rootN-action_note)
+                    if dist%12==0: ## check if valid chord
+                        reward_note += 3
+                    elif dist%8==0:
+                        reward_note += 2
+                    elif dist%4==0:
+                        reward_note += 1
             ## scale score, not complete yet...
             idx = None
             for i, v in enumerate(reversed(state_idx_note)):
                 if self.sameTrack(v, action_note):
-                    idx = -1-i
+                    idx = -1-i ## find last note in current track
                     break
                 elif state_idx_delta[-1-i]>0:
                     break
