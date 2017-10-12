@@ -133,8 +133,8 @@ class DQNAgent:
             a_notes, a_deltas = self.model.predict([batch_note, batch_delta]) ## get a batch of q-value of new model
             t_notes, t_deltas = self.target_model.predict([batch_note, batch_delta]) ## old model
             for i, entries in enumerate(minibatch):
-                target_notes[i][entries[2]] = min(1., max(-1., entries[4] + (self.gamma*t_notes[i][np.argmax(a_notes[i])] if entries[8] else 0))) ## target_note()(act_note) = rew_note
-                target_deltas[i][entries[3]] = min(1., max(-1., entries[5]+ (self.gamma*t_deltas[i][np.argmax(a_deltas[i])] if entries[8] else 0))) ## note -> delta ''
+                target_notes[i][entries[2]] = min(1., max(-1., entries[4] + (self.gamma*t_notes[i][np.argmax(a_notes[i])] if !entries[8] else 0))) ## target_note()(act_note) = rew_note
+                target_deltas[i][entries[3]] = min(1., max(-1., entries[5]+ (self.gamma*t_deltas[i][np.argmax(a_deltas[i])] if !entries[8] else 0))) ## note -> delta ''
             self.model.fit([state_notes, state_deltas], [target_notes, target_deltas], epochs=1, verbose=0) ## a minibatch
 
     def decay(self):
