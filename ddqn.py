@@ -135,8 +135,11 @@ class DQNAgent:
                 target_notes[i][entries[2]] = entries[4] + (self.gamma*t_notes[i][np.argmax(a_notes[i])] if entries[8] else 0) ## target_note()(act_note) = rew_note
                 target_deltas[i][entries[3]] = entries[5]+ (self.gamma*t_deltas[i][np.argmax(a_deltas[i])] if entries[8] else 0) ## note -> delta ''
             self.model.fit([state_notes, state_deltas], [target_notes, target_deltas], epochs=1, verbose=0) ## a minibatch
-            if self.epsilon > self.epsilon_min and self.policy!='softmax':
-                self.epsilon *= self.epsilon_decay
+
+    def decay(self):
+        if self.epsilon > self.epsilon_min and self.policy!='softmax':
+            self.epsilon *= self.epsilon_decay
+        return self.epsilon
 
     def load(self, name):
         self.model.load_weights(name)
@@ -346,8 +349,9 @@ if __name__ == "__main__":
                     break
             if len(agent.memory) > batch_size:
                 for t in xrange(batch_n): ## replay for batch_n times
-                    sys.stderr.write('Learning from past...%d\n' % t)
+                    sys.stderr.write('Learning from past...')
                     agent.replay(batch_size)
+                sys.stderr.write('%.2f\n' % agent.decay())
                 if e % 10 == 0:
                     agent.save("./save/melody-ddqn-{}.h5".format(e))
                     agent.update_target_model() ## force update
