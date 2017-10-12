@@ -233,8 +233,9 @@ class rewardSystem:
     def countSameNote(self, x, l):
         cnt = 1
         for v in reversed(l):
-            if v==x: cnt+=1
-            else: break
+            if self.sameTrack(v, x):
+                if v==x: cnt+=1
+                else: break
         return cnt
     def get_state(self):
         return self.state_note, self.state_delta
@@ -284,9 +285,9 @@ class rewardSystem:
             lrsi.append(action_note)
             lrsNote_new = lrs(lrsi)
             diff = lrsNote_new - lrsNote_old
-            if verbose:
-                sys.stderr.write('lrs changed: '+str(diff)+'\n')
             if diff>0: ## check update
+                if verbose:
+                    sys.stderr.write('lrs changed: '+str(diff)+'\n')
                 reward_note += 2*diff
             if lrsNote_new>8:
                 done = True ## bad end, very bad...
@@ -327,22 +328,18 @@ if __name__ == "__main__":
         for e in range(EPISODES):
             #rewardSys.reset() ## not reset -> infinity melodies
             snote, sdelta = rewardSys.get_state()
-            tns = 0 ## total pitch score
-            tds = 0 ## total tick score
             for time in range(64):
                 action_note, action_delta = agent.act([snote, sdelta])
                 reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=True)
                 if time % 4 == 0:
                     logFP.write('%.2f, %.2f\n' % (reward_note, reward_delta))
-                tns += reward_note
-                tds += reward_delta
                 nnote, ndelta = rewardSys.get_state()
                 agent.remember(snote, sdelta, action_note, action_delta, reward_note, reward_delta, nnote, ndelta, done)
                 snote, sdelta = nnote, ndelta
                 if done:
                     agent.update_target_model()
                     sys.stderr.write('Target network has been updated. Reset stage.\n')
-                    rewardSys.reset() ## not reset -> infinity melodies
+                    rewardSys.reset() ## new melody
                     break
             if len(agent.memory) > batch_size:
                 sys.stderr.write('Learning from past...')
