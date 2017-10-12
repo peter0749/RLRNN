@@ -225,11 +225,10 @@ class rewardSystem:
         self.firstNote = None
     def countFinger(self, x, y, deltas, notes, lim):
         if x>0: return 0
-        cnt=2
-        for i, v in enumerate(reversed(deltas)):
-            if v==0:
-                cnt += 1 if self.sameTrack(y, notes[segLen-1-i]) else 0
-            else: break
+        cnt=1 ## self
+        for i, v in enumerate(reversed(deltas)): ## others
+            cnt += 1 if self.sameTrack(y, notes[segLen-1-i]) else 0
+            if v!=0: break
         return 0 if cnt<=lim else -(cnt-lim)*2
     def countSameNote(self, x, l):
         cnt = 1
@@ -268,12 +267,12 @@ class rewardSystem:
             accumTick += v
         return accumTick, i
     def findRootNote(self, idx, notes, deltas):
-        rootN = 1e9
-        for i in reversed(xrange(idx+1)):
-            if notes[i]>=pianoKeys:
-                rootN = min(rootN, notes[i]-pianoKeys)
-                if deltas[i]>0: break
-            else: break
+        rootN = notes[idx]-pianoKeys ## find root note of accompany
+        for i in reversed(range(idx)): ## reverse([0,idx))
+            if notes[i]>=pianoKeys: ## is accompany
+                rootN = min(rootN, notes[i]-pianoKeys) ## at smaller pitch
+                if deltas[i]>0: break ## if not stack on others, break
+            else: break ## not an accompany note
         return rootN
     def reward(self, action_note, action_delta, verbose=False):
         done = False
@@ -327,10 +326,11 @@ class rewardSystem:
                 done = True ## bad end, very bad...
             ## not complete yet...
             if action_note<pianoKeys: ## main
-                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
+                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 5)
             else: ## accompany
                 reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
 
+        ## update state:
         self.state_note = np.roll(self.state_note, -1, axis=1)
         self.state_note[0,-1,:] = 0
         self.state_note[0,-1,action_note] = 1
@@ -353,27 +353,26 @@ if __name__ == "__main__":
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.1,0.1) ## more sensitive
     done = False
-    batch_size = 32
+    batch_size = 64
     batch_n = 16
 
     with open('./log.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
-        rewardSys.reset() ## initial state
-        for e in range(EPISODES):
-            #rewardSys.reset() ## not reset -> infinity melodies
-            snote, sdelta = rewardSys.get_state()
-            for time in range(64):
-                action_note, action_delta = agent.act([snote, sdelta])
-                reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=True)
+        rewardSys.reset() ## initialize states
+        for e in xrange(EPISODES):
+            snote, sdelta = rewardSys.get_state() ## give initial state
+            for time in xrange(64):
+                action_note, action_delta = agent.act([snote, sdelta]) ## action on state
+                reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False) ## reward on state
                 if time % 4 == 0:
                     logFP.write('%.2f, %.2f\n' % (reward_note, reward_delta))
-                nnote, ndelta = rewardSys.get_state()
+                nnote, ndelta = rewardSys.get_state() ## get next state
                 agent.remember(snote, sdelta, action_note, action_delta, reward_note, reward_delta, nnote, ndelta, done)
-                snote, sdelta = nnote, ndelta
-                if done:
-                    agent.update_target_model()
+                snote, sdelta = nnote, ndelta ## update current state
+                if done: ## termination
+                    agent.update_target_model() ## update
                     sys.stderr.write('Target network has been updated. Reset stage.\n')
-                    rewardSys.reset() ## new melody
+                    rewardSys.reset() ## new initial state
                     break
             if len(agent.memory) > batch_size:
                 sys.stderr.write('Learning from past...')
