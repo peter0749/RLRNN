@@ -85,11 +85,12 @@ class DQNAgent:
         codec = LSTM(600, return_sequences=False, dropout=drop_rate, activation='softsign')(codec)
         encoded = Dropout(drop_rate)(codec)
 
+        ## Using 'tanh' activation function to limit output in range (-1,+1)
         fc_notes = BatchNormalization()(encoded)
-        pred_notes = Dense(vecLen, kernel_initializer='normal', activation='linear', name='note_output')(fc_notes) ## output score
+        pred_notes = Dense(vecLen, kernel_initializer='normal', activation='tanh', name='note_output')(fc_notes) ## output score
 
         fc_delta = BatchNormalization()(encoded)
-        pred_delta = Dense(maxdelta, kernel_initializer='normal', activation='linear', name='time_output')(fc_delta) ## output score
+        pred_delta = Dense(maxdelta, kernel_initializer='normal', activation='tanh', name='time_output')(fc_delta) ## output score
         model = Model([noteInput, deltaInput], [pred_notes, pred_delta])
 
         model.compile(loss=self._huber_loss,
@@ -132,8 +133,8 @@ class DQNAgent:
             a_notes, a_deltas = self.model.predict([batch_note, batch_delta]) ## get a batch of q-value of new model
             t_notes, t_deltas = self.target_model.predict([batch_note, batch_delta]) ## old model
             for i, entries in enumerate(minibatch):
-                target_notes[i][entries[2]] = entries[4] + (self.gamma*t_notes[i][np.argmax(a_notes[i])] if not entries[8] else 0) ## target_note()(act_note) = rew_note
-                target_deltas[i][entries[3]] = entries[5]+ (self.gamma*t_deltas[i][np.argmax(a_deltas[i])] if not entries[8] else 0) ## note -> delta ''
+                target_notes[i][entries[2]] = min(1., max(-1., entries[4] + (self.gamma*t_notes[i][np.argmax(a_notes[i])] if not entries[8] else 0))) ## target_note()(act_note) = rew_note
+                target_deltas[i][entries[3]] = min(1., max(-1., entries[5]+ (self.gamma*t_deltas[i][np.argmax(a_deltas[i])] if not entries[8] else 0))) ## note -> delta ''
             self.model.fit([state_notes, state_deltas], [target_notes, target_deltas], epochs=1, verbose=0) ## a minibatch
 
     def decay(self):
@@ -344,13 +345,13 @@ class rewardSystem:
             sys.stderr.write("reward_delta = %d, %.2f\n" % (reward_delta, tickStyleReward))
         reward_note = -1. if done else reward_note*self.c+self.d*pitchStyleReward
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
-        return reward_note, reward_delta, done
+        return max(-1.,min(1.,reward_note)), max(-1.,min(1.,reward_delta)), done
 
 
 if __name__ == "__main__":
     agent = DQNAgent(policy='softmax', verbose=True)
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.5,1) ## more sensitive
+    rewardSys = rewardSystem(0.1,0.1) ## more sensitive
     done = False
     batch_size = 64
     batch_n = 16
