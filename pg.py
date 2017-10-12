@@ -36,7 +36,7 @@ drop_rate=0.2
 
 class PGAgent:
     def __init__(self):
-        self.learning_rate = 0.0001
+        self.learning_rate = 1e-6
         self.model = self._build_model()
         self.notes = [] # 1
         self.deltas= [] # 2
@@ -322,9 +322,9 @@ class rewardSystem:
 if __name__ == "__main__":
     agent = PGAgent()
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.05,0.1) ## more sensitive
+    rewardSys = rewardSystem(0.7,1) ## more sensitive
     done = False
-    batch_size = 256
+    batch_size = 128
 
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
