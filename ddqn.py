@@ -48,7 +48,7 @@ def softmaxSample(a, eps=1e-7):
 
 class DQNAgent:
     def __init__(self, policy='softmax', verbose=False):
-        self.memory = deque(maxlen=2000)
+        self.memory = deque(maxlen=16384)
         self.gamma = 0.7    # discount rate
         self.epsilon = 0.99  # exploration rate
         self.epsilon_min = 0.001 ## large eps
@@ -60,7 +60,7 @@ class DQNAgent:
         self.update_target_model()
         if verbose:
             if self.policy=='softmax':
-                sys.stderr.write('Agent: Using Softmax policy\n')
+                sys.stderr.write('Agent: Softmax policy\n')
             else:
                 sys.stderr.write('Agent: E-greedy policy\n')
 
@@ -236,18 +236,22 @@ class rewardSystem:
     def get_state(self):
         return self.state_note, self.state_delta
     def scale(self, diffLastNote, delta):
+        '''
         if diffLastNote==4: ## western
             return 3
         elif diffLastNote==8:
             return 2
         elif diffLastNote==7: ## chinese
             return -3
-        elif diffLastNote==8:
+        elif diffLastNote==5:
             return -4
         elif diffLastNote<=2 and delta==0: ## annoying sound
             return -5
         elif diffLastNote==12 and delta==0: ## full 8
             return 1
+        '''
+        if diffLastNote>8:
+            return -2 if delta==0 else -1
         return 0
     def sameTrack(self, a, b):
         return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
@@ -311,11 +315,12 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = DQNAgent(policy='softmax', verbose=False)
+    agent = DQNAgent(policy='E-greedy', verbose=True)
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.01,0.05)
     done = False
-    batch_size = 128
+    batch_size = 64
+    batch_n = 32
 
     with open('./log.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
@@ -340,7 +345,9 @@ if __name__ == "__main__":
                     sys.stderr.write('Target network has been updated.\n')
                     break
             if len(agent.memory) > batch_size:
-                agent.replay(batch_size)
-            if e % 10 == 0:
-                agent.save("./save/melody-ddqn-{}.h5".format(e))
-                agent.update_target_model() ## force update
+                for _ in xrange(batch_n): ## replay for batch_n times
+                    sys.stderr.write('Learning from past...\n')
+                    agent.replay(batch_size)
+                if e % 10 == 0:
+                    agent.save("./save/melody-ddqn-{}.h5".format(e))
+                    agent.update_target_model() ## force update
