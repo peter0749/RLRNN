@@ -5,16 +5,11 @@ Folk from: https://github.com/keon/deep-q-learning
 '''
 from __future__ import print_function
 import os
-os.environ['KERAS_BACKEND']='tensorflow'
 import sys
 import random
 import numpy as np
 from collections import deque
 import math
-import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
-session = tf.Session(config=config)
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormalization
 from keras.optimizers import Adam, RMSprop
@@ -104,37 +99,35 @@ class DQNAgent:
         self.memory.append((state_note, state_delta, action_note, action_delta, reward_note, reward_delta,  next_state_note, next_state_delta, done))
 
     def act(self, state): ## Using CPU
-        with tf.device('/cpu:0'):
-            if self.policy=='softmax': ## softmax policy
-                act_note, act_delta = self.model.predict(state)
-                return softmaxSample(act_note[0]), softmaxSample(act_delta[0])
-            else: ## epsilon-greedy
-                if np.random.rand() <= self.epsilon:
-                    return random.randrange(vecLen), random.randrange(maxdelta)
-                act_note, act_delta = self.model.predict(state)
-                return np.argmax(act_note[0]), np.argmax(act_delta[0])  # returns action
+        if self.policy=='softmax': ## softmax policy
+            act_note, act_delta = self.model.predict(state)
+            return softmaxSample(act_note[0]), softmaxSample(act_delta[0])
+        else: ## epsilon-greedy
+            if np.random.rand() <= self.epsilon:
+                return random.randrange(vecLen), random.randrange(maxdelta)
+            act_note, act_delta = self.model.predict(state)
+            return np.argmax(act_note[0]), np.argmax(act_delta[0])  # returns action
 
     def replay(self, batch_size): ## Using GPU
-        with tf.device('/gpu:0'):
-            minibatch = random.sample(self.memory, batch_size)
-            batch_note = np.zeros((batch_size, segLen, vecLen), dtype=np.bool)
-            batch_delta= np.zeros((batch_size, segLen, maxdelta), dtype=np.bool)
-            #state_note(0), state_delta(1), action_note(2), action_delta(3), reward_note(4), reward_delta(5),  next_state_note(6), next_state_delta(7), done(8) = entries
-            for i, entries in enumerate(minibatch):
-                batch_note[i,:,:] = entries[0][0] ## state_note
-                batch_delta[i,:,:]= entries[1][0] ## state_delta
-            state_notes = batch_note ## a batch of state_note
-            state_deltas= batch_delta
-            target_notes, target_deltas = self.model.predict([batch_note, batch_delta]) ## get a batch of target
-            for i, entries in enumerate(minibatch):
-                batch_note[i,:,:] = entries[6][0] ## next_state_note
-                batch_delta[i,:,:]= entries[7][0] ## next_state_delta
-            a_notes, a_deltas = self.model.predict([batch_note, batch_delta]) ## get a batch of q-value of new model
-            t_notes, t_deltas = self.target_model.predict([batch_note, batch_delta]) ## old model
-            for i, entries in enumerate(minibatch):
-                target_notes[i][entries[2]] = entries[4] + (self.gamma*t_notes[i][np.argmax(a_notes[i])] if not entries[8] else 0) ## target_note()(act_note) = rew_note
-                target_deltas[i][entries[3]] = entries[5]+ (self.gamma*t_deltas[i][np.argmax(a_deltas[i])] if not entries[8] else 0) ## note -> delta ''
-            self.model.fit([state_notes, state_deltas], [target_notes, target_deltas], epochs=1, verbose=0) ## a minibatch
+        minibatch = random.sample(self.memory, batch_size)
+        batch_note = np.zeros((batch_size, segLen, vecLen), dtype=np.bool)
+        batch_delta= np.zeros((batch_size, segLen, maxdelta), dtype=np.bool)
+        #state_note(0), state_delta(1), action_note(2), action_delta(3), reward_note(4), reward_delta(5),  next_state_note(6), next_state_delta(7), done(8) = entries
+        for i, entries in enumerate(minibatch):
+            batch_note[i,:,:] = entries[0][0] ## state_note
+            batch_delta[i,:,:]= entries[1][0] ## state_delta
+        state_notes = batch_note ## a batch of state_note
+        state_deltas= batch_delta
+        target_notes, target_deltas = self.model.predict([batch_note, batch_delta]) ## get a batch of target
+        for i, entries in enumerate(minibatch):
+            batch_note[i,:,:] = entries[6][0] ## next_state_note
+            batch_delta[i,:,:]= entries[7][0] ## next_state_delta
+        a_notes, a_deltas = self.model.predict([batch_note, batch_delta]) ## get a batch of q-value of new model
+        t_notes, t_deltas = self.target_model.predict([batch_note, batch_delta]) ## old model
+        for i, entries in enumerate(minibatch):
+            target_notes[i][entries[2]] = entries[4] + (self.gamma*t_notes[i][np.argmax(a_notes[i])] if not entries[8] else 0) ## target_note()(act_note) = rew_note
+            target_deltas[i][entries[3]] = entries[5]+ (self.gamma*t_deltas[i][np.argmax(a_deltas[i])] if not entries[8] else 0) ## note -> delta ''
+        self.model.fit([state_notes, state_deltas], [target_notes, target_deltas], epochs=1, verbose=0) ## a minibatch
 
     def decay(self):
         if self.epsilon > self.epsilon_min:
@@ -275,8 +268,7 @@ class rewardSystem:
         return rootN
     def reward(self, action_note, action_delta, verbose=False):
         done = False
-        with tf.device('/cpu:0'):
-            p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
+        p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
         pitchStyleReward = math.log(p_n[0][action_note])
         tickStyleReward = math.log(p_d[0][action_delta])
         reward_note=0

@@ -5,16 +5,11 @@ Folk from: https://github.com/keon/deep-q-learning
 '''
 from __future__ import print_function
 import os
-os.environ['KERAS_BACKEND']='tensorflow'
 import sys
 import random
 import numpy as np
 from collections import deque
 import math
-import tensorflow as tf
-config = tf.ConfigProto()
-config.gpu_options.allow_growth = True
-session = tf.Session(config=config)
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormalization
 from keras.optimizers import Adam, RMSprop
@@ -92,26 +87,24 @@ class PGAgent:
         self.deltas_grad.append(new_pd - prob_delta)
 
     def act(self, state): ## Using CPU
-        with tf.device('/cpu:0'):
-            act_note, act_delta = self.model.predict(state)
-            return np.random.choice(vecLen, 1, p=act_note[0])[0], np.random.choice(maxdelta, 1, p=act_delta[0])[0], act_note[0], act_delta[0]
+        act_note, act_delta = self.model.predict(state)
+        return np.random.choice(vecLen, 1, p=act_note[0])[0], np.random.choice(maxdelta, 1, p=act_delta[0])[0], act_note[0], act_delta[0]
 
     def train(self): ## Using GPU
-        with tf.device('/gpu:0'):
-            grad_n = np.vstack(self.notes_grad)
-            grad_d = np.vstack(self.deltas_grad)
-            reward_n = np.vstack(self.notes_reward)
-            reward_d = np.vstack(self.deltas_reward)
-            reward_n /= np.std(reward_n-reward_n.mean())
-            reward_d /= np.std(reward_d-reward_d.mean())
-            grad_n *= reward_n
-            grad_d *= reward_d
-            notes = np.array(self.notes)
-            deltas= np.array(self.deltas)
-            target_n = np.vstack(self.pnotes) + self.learning_rate * grad_n
-            target_d = np.vstack(self.pdeltas) + self.learning_rate * grad_d
-            self.model.train_on_batch([notes[:,0,:,:], deltas[:,0,:,:]], [target_n, target_d])
-            self.reset() ## forget it
+        grad_n = np.vstack(self.notes_grad)
+        grad_d = np.vstack(self.deltas_grad)
+        reward_n = np.vstack(self.notes_reward)
+        reward_d = np.vstack(self.deltas_reward)
+        reward_n /= np.std(reward_n-reward_n.mean())
+        reward_d /= np.std(reward_d-reward_d.mean())
+        grad_n *= reward_n
+        grad_d *= reward_d
+        notes = np.array(self.notes)
+        deltas= np.array(self.deltas)
+        target_n = np.vstack(self.pnotes) + self.learning_rate * grad_n
+        target_d = np.vstack(self.pdeltas) + self.learning_rate * grad_d
+        self.model.train_on_batch([notes[:,0,:,:], deltas[:,0,:,:]], [target_n, target_d])
+        self.reset() ## forget it
 
     def load(self, name):
         self.model.load_weights(name)
@@ -247,8 +240,7 @@ class rewardSystem:
         return rootN
     def reward(self, action_note, action_delta, verbose=False):
         done = False
-        with tf.device('/cpu:0'):
-            p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
+        p_n, p_d = self.rewardRNN.predict([self.state_note, self.state_delta], verbose=0)
         pitchStyleReward = math.log(p_n[0][action_note])
         tickStyleReward = math.log(p_d[0][action_delta])
         reward_note=0
