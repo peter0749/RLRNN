@@ -85,11 +85,12 @@ class DQNAgent:
         codec = LSTM(600, return_sequences=False, dropout=drop_rate, activation='softsign')(codec)
         encoded = Dropout(drop_rate)(codec)
 
+        ## Using 'tanh' activation function to limit output in range (-1,+1)
         fc_notes = BatchNormalization()(encoded)
-        pred_notes = Dense(vecLen, kernel_initializer='normal', activation='linear', name='note_output')(fc_notes) ## output score
+        pred_notes = Dense(vecLen, kernel_initializer='normal', activation='tanh', name='note_output')(fc_notes) ## output score
 
         fc_delta = BatchNormalization()(encoded)
-        pred_delta = Dense(maxdelta, kernel_initializer='normal', activation='linear', name='time_output')(fc_delta) ## output score
+        pred_delta = Dense(maxdelta, kernel_initializer='normal', activation='tanh', name='time_output')(fc_delta) ## output score
         model = Model([noteInput, deltaInput], [pred_notes, pred_delta])
 
         model.compile(loss=self._huber_loss,
@@ -132,8 +133,8 @@ class DQNAgent:
             a_notes, a_deltas = self.model.predict([batch_note, batch_delta]) ## get a batch of q-value of new model
             t_notes, t_deltas = self.target_model.predict([batch_note, batch_delta]) ## old model
             for i, entries in enumerate(minibatch):
-                target_notes[i][entries[2]] = entries[4] + (self.gamma*t_notes[i][np.argmax(a_notes[i])] if entries[8] else 0) ## target_note()(act_note) = rew_note
-                target_deltas[i][entries[3]] = entries[5]+ (self.gamma*t_deltas[i][np.argmax(a_deltas[i])] if entries[8] else 0) ## note -> delta ''
+                target_notes[i][entries[2]] = min(1., max(-1., entries[4] + (self.gamma*t_notes[i][np.argmax(a_notes[i])] if entries[8] else 0))) ## target_note()(act_note) = rew_note
+                target_deltas[i][entries[3]] = min(1., max(-1., entries[5]+ (self.gamma*t_deltas[i][np.argmax(a_deltas[i])] if entries[8] else 0))) ## note -> delta ''
             self.model.fit([state_notes, state_deltas], [target_notes, target_deltas], epochs=1, verbose=0) ## a minibatch
 
     def decay(self):
