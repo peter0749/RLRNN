@@ -94,8 +94,7 @@ class PGAgent:
     def act(self, state): ## Using CPU
         with tf.device('/cpu:0'):
             act_note, act_delta = self.model.predict(state)
-            return np.random.choice(vecLen, 1, p=act_note[0])[0], np.random.choice(maxdelta, 1, p=act_delta[0])[0],
-                    act_note[0], act_delta[0]
+            return np.random.choice(vecLen, 1, p=act_note[0])[0], np.random.choice(maxdelta, 1, p=act_delta[0])[0], act_note[0], act_delta[0]
 
     def train(self): ## Using GPU
         with tf.device('/gpu:0'):
@@ -325,7 +324,7 @@ if __name__ == "__main__":
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.05,0.1) ## more sensitive
     done = False
-    batch_size = 128
+    batch_size = 256
 
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
@@ -338,12 +337,12 @@ if __name__ == "__main__":
                 if time % 4 == 0:
                     logFP.write('%.2f, %.2f\n' % (reward_note, reward_delta))
                 nnote, ndelta = rewardSys.get_state() ## get next state
-                agent.remember(action_notes, action_delta, snote, sdelta, reward_note, reward_delta, p_n, p_d)
+                agent.remember(action_note, action_delta, snote, sdelta, reward_note, reward_delta, p_n, p_d)
                 snote, sdelta = nnote, ndelta ## update current state
                 if done: ## termination
                     rewardSys.reset() ## new initial state
                     break
-            sys.stderr.write('episode: %d Learning from past...' % e)
+            sys.stderr.write('episode: %d Learning from past... bs: %d\n' % (e, len(agent.notes)))
             agent.train()
             if e % 10 == 0:
                 agent.save("./pg/melody-ddqn-{}.h5".format(e))
