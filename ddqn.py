@@ -363,6 +363,8 @@ if __name__ == "__main__":
             for time in xrange(64):
                 action_note, action_delta = agent.act([snote, sdelta]) ## action on state
                 reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False) ## reward on state
+                reward_note = np.clip(reward_note, -1, 1)
+                reward_delta = np.clip(reward_delta, -1, 1)
                 if time % 4 == 0:
                     logFP.write('%.2f, %.2f\n' % (reward_note, reward_delta))
                 nnote, ndelta = rewardSys.get_state() ## get next state
