@@ -319,8 +319,8 @@ if __name__ == "__main__":
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.01,0.05)
     done = False
-    batch_size = 64
-    batch_n = 32
+    batch_size = 32
+    batch_n = 16
 
     with open('./log.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
@@ -345,8 +345,8 @@ if __name__ == "__main__":
                     sys.stderr.write('Target network has been updated.\n')
                     break
             if len(agent.memory) > batch_size:
-                for _ in xrange(batch_n): ## replay for batch_n times
-                    sys.stderr.write('Learning from past...\n')
+                for t in xrange(batch_n): ## replay for batch_n times
+                    sys.stderr.write('Learning from past...%d\n' % t)
                     agent.replay(batch_size)
                 if e % 10 == 0:
                     agent.save("./save/melody-ddqn-{}.h5".format(e))
