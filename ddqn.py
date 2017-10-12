@@ -241,14 +241,16 @@ class rewardSystem:
     def get_state(self):
         return self.state_note, self.state_delta
     def scale(self, diffLastNote, delta):
+        if diffLastNote>12: ## Too big jump
+            return -6
         if diffLastNote==4: ## western
             return 3
         elif diffLastNote==8:
             return 2
         elif diffLastNote==7: ## chinese
-            return -3
-        elif diffLastNote==5:
             return -4
+        elif diffLastNote==5:
+            return -3
         elif diffLastNote<=2 and delta==0: ## annoying sound
             return -5
         elif diffLastNote==12 and delta==0: ## full 8
@@ -293,12 +295,12 @@ class rewardSystem:
                 if not idx is None: ## idx points to a nearest accompany note
                     ## find root note
                     rootN = self.findRootNote(idx, state_idx_note, state_idx_delta)
-                    dist = abs(rootN-action_note)
-                    if dist%12==0: ## check if valid chord
+                    dist = abs(rootN-action_note)%12
+                    if dist==0: ## check if valid chord
                         reward_note += 3
-                    elif dist%8==0:
+                    elif dist==8:
                         reward_note += 2
-                    elif dist%4==0:
+                    elif dist==4:
                         reward_note += 1
             ## scale score, not complete yet...
             idx = None
@@ -321,7 +323,7 @@ class rewardSystem:
                 if verbose:
                     sys.stderr.write('lrs changed: '+str(diff)+'\n')
                 reward_note += 2*diff
-            if lrsNote_new>8:
+            if lrsNote_new>8 or lrsNote_new==0:
                 done = True ## bad end, very bad...
             ## not complete yet...
             if action_note<pianoKeys: ## main
