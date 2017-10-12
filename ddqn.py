@@ -49,7 +49,7 @@ def softmaxSample(a, temp=0.7, eps=1e-7):
 class DQNAgent:
     def __init__(self, policy='softmax', verbose=False):
         self.memory = deque(maxlen=16384)
-        self.gamma = 0.7    # discount rate
+        self.gamma = 0.8    # discount rate
         self.epsilon = 0.99  # exploration rate
         self.epsilon_min = 0.001 ## large eps
         self.epsilon_decay = 0.995
@@ -93,7 +93,7 @@ class DQNAgent:
         model = Model([noteInput, deltaInput], [pred_notes, pred_delta])
 
         model.compile(loss=self._huber_loss,
-                      optimizer=RMSprop(lr=self.learning_rate))
+                      optimizer=RMSprop(lr=self.learning_rate, clipnorm=1.))
         return model
 
     def update_target_model(self):
@@ -342,7 +342,7 @@ class rewardSystem:
         if verbose:
             sys.stderr.write("reward_note = %d, %.2f, %s\n" % (reward_note, pitchStyleReward, "T" if done else "F"))
             sys.stderr.write("reward_delta = %d, %.2f\n" % (reward_delta, tickStyleReward))
-        reward_note = -1. if done else reward_note*self.c+self.d*pitchStyleReward
+        reward_note = -20. if done else reward_note*self.c+self.d*pitchStyleReward
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
         return reward_note, reward_delta, done
 
