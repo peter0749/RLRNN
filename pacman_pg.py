@@ -95,7 +95,7 @@ if __name__ == "__main__":
     skip = 3 ## frame skip
     env = gym.make("MsPacman-v0")
     action_size = env.action_space.n
-    agent = PGAgent(action_num=action_size)
+    agent = PGAgent(lr=0.01, action_num=action_size)
     if os.path.isfile('./Pacman.h5'):
         agent.load('./Pacman.h5')
 
