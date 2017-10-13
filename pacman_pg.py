@@ -35,7 +35,9 @@ class PGAgent:
         # Neural Net for PG learning Model
         model = Sequential()
         model.add(Conv2D(32, 3, padding='same', data_format='channels_last', activation='relu', input_shape=self.state_shape))
+        model.add(MaxPooling2D())
         model.add(Conv2D(64, 3, padding='same', data_format='channels_last', activation='relu'))
+        model.add(MaxPooling2D())
         model.add(Flatten())
         model.add(Dense(self.action_num, activation='softmax'))
         model.compile(loss='categorical_crossentropy',
@@ -89,7 +91,7 @@ class PGAgent:
         self.model.save_weights(name)
 
 if __name__ == "__main__":
-    BATCH_SIZE = 16
+    BATCH_SIZE = 32
     env = gym.make("MsPacman-v0")
     action_size = env.action_space.n
     agent = PGAgent(action_num=action_size)
