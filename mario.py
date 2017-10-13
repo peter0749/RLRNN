@@ -43,8 +43,8 @@ class PGAgent:
     def _build_model(self):
         # Neural Net for PG learning Model
         model = Sequential()
-        model.add(Conv2D(32, 5, strides=(2,2), padding='same', data_format='channels_last', activation='relu', kernel_initializer='RandomUniform', input_shape=self.state_shape))
-        model.add(Conv2D(64, 5, strides=(2,2), padding='same', data_format='channels_last', activation='relu', kernel_initializer='RandomUniform'))
+        model.add(Conv2D(32, 7, strides=(2,2), padding='same', data_format='channels_last', activation='relu', kernel_initializer='RandomUniform', input_shape=self.state_shape))
+        model.add(Conv2D(64, 7, strides=(2,2), padding='same', data_format='channels_last', activation='relu', kernel_initializer='RandomUniform'))
         model.add(Flatten())
         model.add(Dense(64, activation='relu', kernel_initializer='RandomUniform'))
         model.add(Dense(32, activation='relu', kernel_initializer='RandomUniform'))
