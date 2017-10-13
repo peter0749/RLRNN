@@ -244,7 +244,7 @@ class rewardSystem:
         pitchStyleReward = math.log(p_n[0][action_note])
         tickStyleReward = math.log(p_d[0][action_delta])
         reward_note=0
-        reward_delta=0
+        reward_delta= -1 if action_delta>0 and action_delta<4 else 0 ## prevent unfavored tick: (0,4)
         if np.sum(self.state_note)==segLen and np.sum(self.state_delta)==segLen:
             state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
@@ -316,7 +316,7 @@ if __name__ == "__main__":
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.7,1) ## more sensitive
     done = False
-    batch_size = 128
+    batch_size = 256
 
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
