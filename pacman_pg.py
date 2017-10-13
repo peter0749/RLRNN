@@ -81,7 +81,7 @@ class PGAgent:
         _grad *= self._discount_and_norm_rewards(_reward)
         _state = np.array(self.state)
         target = np.vstack(self.prob) + self.learning_rate * _grad
-        self.model.fit(_state, target, batch_size=batch_size, epochs=int(math.ceil(len(self.state)/batch_size)))
+        self.model.fit(_state, target, batch_size=batch_size, epochs=1)
         self.reset() ## forget it
 
     def load(self, name):
