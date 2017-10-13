@@ -19,6 +19,7 @@ from keras.models import load_model
 EPISODES = 10000
 
 def preprocess(x):
+    x = x.astype(np.float32) ## ?-type -> float32
     x[...,0] -= 123.68 #R
     x[...,1] -= 116.779 #G
     x[...,2] -= 103.939 #B
@@ -101,10 +102,10 @@ class PGAgent:
 
 if __name__ == "__main__":
     BATCH_SIZE = 256
-    skip = 3 ## frame skip
+    skip = 2 ## frame skip
     env = gym.make("MsPacman-v0")
     action_size = env.action_space.n
-    agent = PGAgent(lr=1e-7, action_num=action_size, gamma=0.99)
+    agent = PGAgent(lr=1e-8, action_num=action_size, gamma=0.99)
     if os.path.isfile('./Pacman.h5'):
         agent.load('./Pacman.h5')
 
