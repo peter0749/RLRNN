@@ -16,7 +16,7 @@ from keras.optimizers import Adam, RMSprop
 from keras import backend as K
 from keras.models import load_model
 
-EPISODES = 8000
+EPISODES = 10000
 
 class PGAgent:
     def __init__(self, lr=1e-6, gamma=0.95, state_shape=(210, 160, 3), action_num=None): ## low lr to tune all weights
@@ -34,12 +34,12 @@ class PGAgent:
     def _build_model(self):
         # Neural Net for PG learning Model
         model = Sequential()
-        model.add(Conv2D(32, 3, padding='same', data_format='channels_last', activation='relu', input_shape=self.state_shape))
-        model.add(MaxPooling2D())
-        model.add(Conv2D(64, 3, padding='same', data_format='channels_last', activation='relu'))
-        model.add(MaxPooling2D())
+        model.add(Conv2D(32, 5, strides=(2,2), padding='same', data_format='channels_last', activation='relu', kernel_initializer='RandomUniform', input_shape=self.state_shape))
+        model.add(Conv2D(64, 5, strides=(2,2), padding='same', data_format='channels_last', activation='relu', kernel_initializer='RandomUniform'))
         model.add(Flatten())
-        model.add(Dense(self.action_num, activation='softmax'))
+        model.add(Dense(64, activation='relu', kernel_initializer='RandomUniform'))
+        model.add(Dense(32, activation='relu', kernel_initializer='RandomUniform'))
+        model.add(Dense(self.action_num, activation='softmax', kernel_initializer='RandomUniform'))
         model.compile(loss='categorical_crossentropy',
                       optimizer=RMSprop(lr=self.learning_rate, clipnorm=1.))
         return model
@@ -81,6 +81,7 @@ class PGAgent:
         _grad = np.vstack(self.grad)
         _reward = np.vstack(self.reward)
         _grad *= self._discount_and_norm_rewards(_reward)
+        #_grad *= _reward
         _state = np.array(self.state)
         target = np.vstack(self.prob) + self.learning_rate * _grad
         self.model.fit(_state, target, batch_size=batch_size, epochs=1)
@@ -93,11 +94,11 @@ class PGAgent:
         self.model.save_weights(name)
 
 if __name__ == "__main__":
-    BATCH_SIZE = 64
+    BATCH_SIZE = 256
     skip = 3 ## frame skip
     env = gym.make("MsPacman-v0")
     action_size = env.action_space.n
-    agent = PGAgent(lr=0.001, action_num=action_size)
+    agent = PGAgent(lr=1e-7, action_num=action_size, gamma=0.99)
     if os.path.isfile('./Pacman.h5'):
         agent.load('./Pacman.h5')
 

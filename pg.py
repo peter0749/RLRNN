@@ -30,7 +30,7 @@ hidden_note=256
 drop_rate=0.2
 
 class PGAgent:
-    def __init__(self, lr=1e-6, gamma=0.95): ## low lr to tune all weights
+    def __init__(self, lr=1e-7, gamma=0.95): ## low lr to tune all weights
         self.learning_rate = lr
         self.model = self._build_model()
         self.notes = [] # 1
@@ -99,21 +99,18 @@ class PGAgent:
         https://morvanzhou.github.io/tutorials/machine-learning/reinforcement-learning/5-2-policy-gradient-softmax2/
         for further explain
 
-        But in this case, relation of rewards between timesteps is not important...
         '''
-        reward = np.array(reward)
-        reward -= reward.mean()
-        reward /= reward.std()
-        return reward
-        #discount_rs = np.zeros_like(reward)
-        #running_add = 0
-        #for t in reversed(range(len(reward))):
-            #running_add = running_add * self.gamma + reward[t]
-            #discount_rs[t] = running_add
+        discount_rs = np.zeros_like(reward)
+        running_add = 0
+        for t in reversed(range(len(reward))):
+            if reward[t]!=0: ## has reward
+                running_add = 0 ## discart previous. refer from this event
+            running_add = running_add * self.gamma + reward[t]
+            discount_rs[t] = running_add
         # normalize the rewards
-        #discount_rs -= discount_rs.mean()
-        #discount_rs /= discount_rs.std()
-        #return discount_rs
+        discount_rs -= discount_rs.mean()
+        discount_rs /= discount_rs.std()
+        return discount_rs
 
     def train(self): ## Using GPU
         grad_n = np.vstack(self.notes_grad)
