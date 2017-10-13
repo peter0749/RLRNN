@@ -120,8 +120,9 @@ if __name__ == "__main__":
                 env.render()
                 act, p = agent.act(state) ## action on state
                 nstate, reward, done, info = env.step(act)
+                reward += step ## also consider persistancy
                 score += reward
-                reward = -100 if done else reward
+                reward = -100 if done else reward ## if be cought 
                 if step%skip==0 or done:
                     agent.remember(act, state, reward, p)
                 state = preprocess(nstate) ## next state
