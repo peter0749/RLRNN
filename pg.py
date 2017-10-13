@@ -89,7 +89,9 @@ class PGAgent:
 
     def act(self, state): ## Using CPU
         act_note, act_delta = self.model.predict(state)
-        return np.random.choice(vecLen, 1, p=act_note[0])[0], np.random.choice(maxdelta, 1, p=act_delta[0])[0], act_note[0], act_delta[0]
+        act_note = act_note[0] / np.sum(act_note[0]) ## norm -> PMF
+        act_delta = act_delta[0] / np.sum(act_delta[0])
+        return np.random.choice(vecLen, 1, p=act_note)[0], np.random.choice(maxdelta, 1, p=act_delta)[0], act_note, act_delta
     def _discount_and_norm_rewards(self, reward):
         '''
         See: https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/blob/master/contents/7_Policy_gradient_softmax/RL_brain.py
