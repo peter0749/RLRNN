@@ -103,8 +103,6 @@ class PGAgent:
         discount_rs = np.zeros_like(reward)
         running_add = 0
         for t in reversed(range(len(reward))):
-            if reward[t]!=0: ## has reward
-                running_add = 0 ## discart previous. refer from this event
             running_add = running_add * self.gamma + reward[t]
             discount_rs[t] = running_add
         # normalize the rewards
