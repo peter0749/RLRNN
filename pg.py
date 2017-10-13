@@ -99,7 +99,7 @@ class PGAgent:
         '''
         discount_rs = np.zeros_like(reward)
         running_add = 0
-        for time in reversed(range(len(reward))):
+        for t in reversed(range(len(reward))):
             running_add = running_add * self.gamma + reward[t]
             discount_rs[t] = running_add
         # normalize the rewards
