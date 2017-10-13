@@ -111,7 +111,7 @@ if __name__ == "__main__":
                 act, p = agent.act(state) ## action on state
                 nstate, reward, done, info = env.step(act)
                 score += reward
-                if step%skip==0:
+                if step%skip==0 or done:
                     agent.remember(act, state, reward, p)
                 state = nstate
                 step += 1
