@@ -30,8 +30,8 @@ hidden_note=256
 drop_rate=0.2
 
 class PGAgent:
-    def __init__(self):
-        self.learning_rate = 1e-6
+    def __init__(self, lr=1e-6, gamma=0.95): ## low lr to tune all weights
+        self.learning_rate = lr
         self.model = self._build_model()
         self.notes = [] # 1
         self.deltas= [] # 2
@@ -41,6 +41,7 @@ class PGAgent:
         self.deltas_grad =[] #6
         self.notes_reward=[] #7
         self.deltas_reward=[] #8
+        self.gamma = gamma
     def reset(self):
         self.notes, self.deltas, self.pnotes, self.pdeltas, self.notes_grad, self.deltas_grad, self.notes_reward, self.deltas_reward = [], [], [], [], [], [], [], []
 
@@ -89,16 +90,30 @@ class PGAgent:
     def act(self, state): ## Using CPU
         act_note, act_delta = self.model.predict(state)
         return np.random.choice(vecLen, 1, p=act_note[0])[0], np.random.choice(maxdelta, 1, p=act_delta[0])[0], act_note[0], act_delta[0]
+    def _discount_and_norm_rewards(self, reward):
+        '''
+        See: https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/blob/master/contents/7_Policy_gradient_softmax/RL_brain.py
+        , http://karpathy.github.io/2016/05/31/rl/ and
+        https://morvanzhou.github.io/tutorials/machine-learning/reinforcement-learning/5-2-policy-gradient-softmax2/
+        for further explain
+        '''
+        discount_rs = np.zeros_like(reward)
+        running_add = 0
+        for time in reversed(range(len(reward))):
+            running_add = running_add * self.gamma + reward[t]
+            discount_rs[t] = running_add
+        # normalize the rewards
+        discount_rs -= discount_rs.mean()
+        discount_rs /= discount_rs.std()
+        return discount_rs
 
     def train(self): ## Using GPU
         grad_n = np.vstack(self.notes_grad)
         grad_d = np.vstack(self.deltas_grad)
         reward_n = np.vstack(self.notes_reward)
         reward_d = np.vstack(self.deltas_reward)
-        reward_n /= np.std(reward_n-reward_n.mean())
-        reward_d /= np.std(reward_d-reward_d.mean())
-        grad_n *= reward_n
-        grad_d *= reward_d
+        grad_n *= self._discount_and_norm_rewards(reward_n)
+        grad_d *= self._discount_and_norm_rewards(reward_d)
         notes = np.array(self.notes)
         deltas= np.array(self.deltas)
         target_n = np.vstack(self.pnotes) + self.learning_rate * grad_n
