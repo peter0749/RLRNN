@@ -68,6 +68,8 @@ class PGAgent:
         discount_rs = np.zeros_like(reward)
         running_add = 0
         for t in reversed(range(len(reward))):
+            if reward[t]!=0:
+                running_add = 0
             running_add = running_add * self.gamma + reward[t]
             discount_rs[t] = running_add
         # normalize the rewards
@@ -91,11 +93,11 @@ class PGAgent:
         self.model.save_weights(name)
 
 if __name__ == "__main__":
-    BATCH_SIZE = 32
+    BATCH_SIZE = 64
     skip = 3 ## frame skip
     env = gym.make("MsPacman-v0")
     action_size = env.action_space.n
-    agent = PGAgent(lr=0.01, action_num=action_size)
+    agent = PGAgent(lr=0.001, action_num=action_size)
     if os.path.isfile('./Pacman.h5'):
         agent.load('./Pacman.h5')
 
@@ -111,7 +113,7 @@ if __name__ == "__main__":
                 act, p = agent.act(state) ## action on state
                 nstate, reward, done, info = env.step(act)
                 score += reward
-                reward = -1 if done else reward
+                reward = -100 if done else reward
                 if step%skip==0 or done:
                     agent.remember(act, state, reward, p)
                 state = nstate
