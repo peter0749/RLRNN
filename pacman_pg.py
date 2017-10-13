@@ -11,7 +11,7 @@ import random
 import numpy as np
 import math
 from keras.models import Sequential, Model
-from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormalization, Conv2D, Flatten
+from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormalization, Conv2D, Flatten, MaxPooling2D
 from keras.optimizers import Adam, RMSprop
 from keras import backend as K
 from keras.models import load_model
