@@ -92,6 +92,7 @@ class PGAgent:
 
 if __name__ == "__main__":
     BATCH_SIZE = 32
+    skip = 3 ## frame skip
     env = gym.make("MsPacman-v0")
     action_size = env.action_space.n
     agent = PGAgent(action_num=action_size)
@@ -105,7 +106,6 @@ if __name__ == "__main__":
             state = env.reset() ## new game
             score = 0
             step = 0
-            skip = 3 ## frame skip
             while not done:
                 env.render()
                 act, p = agent.act(state) ## action on state
