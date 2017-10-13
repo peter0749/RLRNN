@@ -104,13 +104,17 @@ if __name__ == "__main__":
             done = False
             state = env.reset() ## new game
             score = 0
+            step = 0
+            skip = 3 ## frame skip
             while not done:
                 env.render()
                 act, p = agent.act(state) ## action on state
                 nstate, reward, done, info = env.step(act)
                 score += reward
-                agent.remember(act, state, reward, p)
+                if step%skip==0:
+                    agent.remember(act, state, reward, p)
                 state = nstate
+                step += 1
                 if done: ## termination
                     sys.stderr.write('episode: %d Learning from past... bs: %d\n' % (e, len(agent.state)))
                     logFP.write('%d\n' % score)
