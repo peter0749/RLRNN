@@ -18,6 +18,12 @@ from keras.models import load_model
 
 EPISODES = 10000
 
+def preprocess(x):
+    x[...,0] -= 123.68 #R
+    x[...,1] -= 116.779 #G
+    x[...,2] -= 103.939 #B
+    return x
+
 class PGAgent:
     def __init__(self, lr=1e-6, gamma=0.95, state_shape=(210, 160, 3), action_num=None): ## low lr to tune all weights
         self.learning_rate = lr
@@ -106,7 +112,7 @@ if __name__ == "__main__":
         logFP.write('score\n')
         for e in xrange(EPISODES):
             done = False
-            state = env.reset() ## new game
+            state = preprocess(env.reset()) ## new game
             score = 0
             step = 0
             while not done:
@@ -117,7 +123,7 @@ if __name__ == "__main__":
                 reward = -100 if done else reward
                 if step%skip==0 or done:
                     agent.remember(act, state, reward, p)
-                state = nstate
+                state = preprocess(nstate) ## next state
                 step += 1
                 if done: ## termination
                     sys.stderr.write('episode: %d Learning from past... bs: %d\n' % (e, len(agent.state)))
