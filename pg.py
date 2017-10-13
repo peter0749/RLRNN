@@ -238,12 +238,12 @@ class rewardSystem:
         return 0
     def sameTrack(self, a, b):
         return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
-    def checkAccompanyDist(self, delta, notes, deltas):
+    def checkTrackDist(self, note, delta, notes, deltas):
         accumTick=delta
         i = None
         for ti, v in enumerate(reversed(deltas)):
             i = segLen-1-ti
-            if notes[i]>=pianoKeys: break ## find accompany
+            if not self.sameTrack(note ,notes[i]): break ## find accompany
             i = None
             accumTick += v
         return accumTick, i
@@ -267,10 +267,10 @@ class rewardSystem:
             state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
             if self.countSameNote(action_note, state_idx_note)>4:
                 done = True ## bad end
+            dist, idx = self.checkTrackDist(action_note, action_delta, state_idx_note, state_idx_delta)
+            if dist>64: ## save ya
+                reward_note += 2 ## interrupt the other long track
             if action_note<pianoKeys: ## is main melody
-                dist, idx = self.checkAccompanyDist(action_delta, state_idx_note, state_idx_delta)
-                if dist>64: ## 一小節
-                    reward_delta -= 8 ## too far
                 if not idx is None: ## idx points to a nearest accompany note
                     ## find root note
                     rootN = self.findRootNote(idx, state_idx_note, state_idx_delta)
