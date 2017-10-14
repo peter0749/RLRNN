@@ -339,20 +339,24 @@ if __name__ == "__main__":
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
         rewardSys.reset() ## initialize states
+        score_note = 0.
+        score_delta = 0.
         for e in xrange(EPISODES):
             snote, sdelta = rewardSys.get_state() ## give initial state
             for time in xrange(batch_size):
                 action_note, action_delta, p_n, p_d = agent.act([snote, sdelta]) ## action on state
                 reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False) ## reward on state
-                if time % 4 == 0:
-                    logFP.write('%.2f, %.2f\n' % (reward_note, reward_delta))
+                score_note += float(reward_note)
+                score_delta += float(reward_delta)
                 nnote, ndelta = rewardSys.get_state() ## get next state
-                agent.remember(action_note, action_delta, snote, sdelta, reward_note, reward_delta, p_n, p_d)
+                agent.remember(action_note, action_delta, snote, sdelta, score_note, score_delta, p_n, p_d)
                 snote, sdelta = nnote, ndelta ## update current state
                 if done: ## termination
                     rewardSys.reset() ## new initial state
                     break
             sys.stderr.write('episode: %d Learning from past... bs: %d\n' % (e, len(agent.notes)))
+            logFP.write("%.2f, %.2f\n" % (score_note, score_delta))
+            score_note, score_delta = 0, 0
             agent.train()
             if e % 10 == 0:
                 agent.save("./pg/melody-ddqn-{}.h5".format(e))
