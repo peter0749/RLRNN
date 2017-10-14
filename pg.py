@@ -330,11 +330,11 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = PGAgent()
+    agent = PGAgent(lr=0.001)
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.7,1) ## more sensitive
     done = False
-    batch_size = 256
+    batch_size = 64
 
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
