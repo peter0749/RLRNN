@@ -202,8 +202,8 @@ class rewardSystem:
         self.d = oldr
     def reset(self):
         ## random inititalize
-        self.state_note[:,:,:] = np.eye(vecLen)[np.random.choice(vecLen, segLen)]
-        self.state_delta[:,:,:]= np.eye(maxdelta)[np.random.choice(maxdelta, segLen)]
+        self.state_note[:,:,:] = 0
+        self.state_delta[:,:,:]= 0
         self.firstNote = None
     def countFinger(self, x, y, deltas, notes, lim):
         if x>0: return 0
@@ -224,14 +224,14 @@ class rewardSystem:
     def scale(self, diffLastNote, delta):
         if diffLastNote>12: ## Too big jump
             return -6
-        if diffLastNote==4: ## western
+        elif diffLastNote==4: ## western
             return 3
         elif diffLastNote==8:
             return 2
-        elif diffLastNote==7: ## chinese
-            return -4
-        elif diffLastNote==5:
-            return -3
+        #elif diffLastNote==7: ## chinese
+            #return -4
+        #elif diffLastNote==5:
+            #return -3
         elif diffLastNote<=2 and delta==0: ## annoying sound
             return -5
         elif diffLastNote==12 and delta==0: ## full 8
@@ -300,8 +300,6 @@ class rewardSystem:
             lrsNote_new = lrs(lrsi)
             diff = lrsNote_new - lrsNote_old
             if diff>0: ## check update
-                if verbose:
-                    sys.stderr.write('lrs changed: '+str(diff)+'\n')
                 reward_note += 2*diff
             if lrsNote_new>8 or lrsNote_new==0:
                 done = True ## bad end, very bad...
@@ -330,7 +328,7 @@ class rewardSystem:
 
 
 if __name__ == "__main__":
-    agent = PGAgent(lr=1e-5, gamma=0.99)
+    agent = PGAgent(lr=1e-8, gamma=0.99)
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.2,1) ## more sensitive
     done = False
