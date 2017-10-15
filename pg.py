@@ -285,8 +285,8 @@ class rewardSystem:
             if self.countSameNote(action_note, state_idx_note)>4:
                 done = True ## bad end
             dist, idx = self.checkTrackDist(action_note, action_delta, state_idx_note, state_idx_delta)
-            if dist>64: ## save ya
-                reward_note -= 2 ## penalty of long track
+            #if dist>64: ## save ya
+                #reward_note -= 2 ## penalty of long track
             if action_note<pianoKeys: ## is main melody
                 if not idx is None: ## idx points to a nearest accompany note
                     ## find root note
