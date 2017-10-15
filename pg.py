@@ -201,7 +201,7 @@ class rewardSystem:
         self.c = rat
         self.d = oldr
     def reset(self, seed=None):
-        if seed is None ## if seed is not specified, sets to 0
+        if seed is None: ## if seed is not specified, sets to 0
             self.state_note[:,:,:] = 0
             self.state_delta[:,:,:]= 0
         else: # using seed
