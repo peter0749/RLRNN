@@ -51,7 +51,7 @@ class PGAgent:
             if upto + w >= r:
                 return i
             upto += w
-        assert False, "Shouldn't get here"
+        return np.random.choice(len(choices), 1, p=choices)[0]
     def reset(self):
         self.notes, self.deltas, self.pnotes, self.pdeltas, self.notes_grad, self.deltas_grad, self.notes_reward, self.deltas_reward = [], [], [], [], [], [], [], []
 
