@@ -42,6 +42,16 @@ class PGAgent:
         self.notes_reward=[] #7
         self.deltas_reward=[] #8
         self.gamma = gamma
+        self.randomT = random.SystemRandom()
+    def weighted_choice(self, choices):
+        total = sum(choices)
+        r = self.randomT.uniform(0, total)
+        upto = 0
+        for i, w in enumerate(choices):
+            if upto + w >= r:
+                return i
+            upto += w
+        assert False, "Shouldn't get here"
     def reset(self):
         self.notes, self.deltas, self.pnotes, self.pdeltas, self.notes_grad, self.deltas_grad, self.notes_reward, self.deltas_reward = [], [], [], [], [], [], [], []
 
@@ -81,17 +91,18 @@ class PGAgent:
         self.pnotes.append(prob_note)
         self.pdeltas.append(prob_delta)
         new_pn = np.zeros(vecLen, dtype=np.float32)
-        new_pn[note_act] = 1
+        new_pn[note_act] = 1.
         self.notes_grad.append(new_pn - prob_note)
         new_pd = np.zeros(maxdelta, dtype=np.float32)
-        new_pd[delta_act] = 1
+        new_pd[delta_act] = 1.
         self.deltas_grad.append(new_pd - prob_delta)
 
     def act(self, state): ## Using CPU
         act_note, act_delta = self.model.predict(state)
-        act_note = act_note[0] / np.sum(act_note[0]) ## norm -> PMF
-        act_delta = act_delta[0] / np.sum(act_delta[0])
-        return np.random.choice(vecLen, 1, p=act_note)[0], np.random.choice(maxdelta, 1, p=act_delta)[0], act_note, act_delta
+        #act_note = act_note[0] / np.sum(act_note[0]) ## norm -> PMF
+        #act_delta = act_delta[0] / np.sum(act_delta[0])
+        #return np.random.choice(vecLen, 1, p=act_note)[0], np.random.choice(maxdelta, 1, p=act_delta)[0], act_note, act_delta
+        return self.weighted_choice(act_note[0]), self.weighted_choice(act_delta[0]), act_note[0], act_delta[0]
     def _discount_and_norm_rewards(self, reward):
         '''
         See: https://github.com/MorvanZhou/Reinforcement-learning-with-tensorflow/blob/master/contents/7_Policy_gradient_softmax/RL_brain.py
@@ -275,7 +286,7 @@ class rewardSystem:
                 done = True ## bad end
             dist, idx = self.checkTrackDist(action_note, action_delta, state_idx_note, state_idx_delta)
             if dist>64: ## save ya
-                reward_note += 2 ## interrupt the other long track
+                reward_note -= 2 ## penalty of long track
             if action_note<pianoKeys: ## is main melody
                 if not idx is None: ## idx points to a nearest accompany note
                     ## find root note
@@ -304,10 +315,14 @@ class rewardSystem:
             lrsi.append(action_note)
             lrsNote_new = lrs(lrsi)
             diff = lrsNote_new - lrsNote_old
-            if diff>0: ## check update
-                reward_note += 2*diff
-            if lrsNote_new>8 or lrsNote_new==0:
-                done = True ## bad end, very bad...
+            if lrsNote_new == 0:
+                reward_note -= 4
+                done = True
+            elif diff>0: ## check update
+                reward_note += diff
+                if lrsNote_new>12:
+                    reward_note -= 3
+                    done = True ## bad end, very bad...
             ## not complete yet...
             if action_note<pianoKeys: ## main
                 reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 5)
