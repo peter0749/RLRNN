@@ -322,7 +322,7 @@ class rewardSystem:
         if verbose:
             sys.stderr.write("reward_note = %d, %.2f, %s\n" % (reward_note, pitchStyleReward, "T" if done else "F"))
             sys.stderr.write("reward_delta = %d, %.2f\n" % (reward_delta, tickStyleReward))
-        reward_note = -20. if done else reward_note*self.c+self.d*pitchStyleReward
+        reward_note = reward_note*self.c+self.d*pitchStyleReward
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
         return reward_note, reward_delta, done
 
