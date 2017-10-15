@@ -12,7 +12,7 @@ from collections import deque
 import math
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormalization
-from keras.optimizers import Adam, RMSprop
+from keras.optimizers import SGD
 from keras import backend as K
 from keras.models import load_model
 from attention_block import SoftAttentionBlock
@@ -79,7 +79,7 @@ class PGAgent:
         model = Model([noteInput, deltaInput], [pred_notes, pred_delta])
 
         model.compile(loss='categorical_crossentropy',
-                      optimizer=RMSprop(lr=self.learning_rate, clipnorm=1.))
+                      optimizer=SGD(lr=self.learning_rate, clipnorm=1., decay=1e-7, momentum=0.9, nesterov=True))
         return model
 
     def remember(self, note_act, delta_act, state_note, state_delta, reward_note, reward_delta, prob_note, prob_delta):
