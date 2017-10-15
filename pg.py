@@ -200,10 +200,15 @@ class rewardSystem:
         self.firstNote = None
         self.c = rat
         self.d = oldr
-    def reset(self):
-        ## random inititalize
-        self.state_note[:,:,:] = 0
-        self.state_delta[:,:,:]= 0
+    def reset(self, seed=None):
+        if seed is None ## if seed is not specified, sets to 0
+            self.state_note[:,:,:] = 0
+            self.state_delta[:,:,:]= 0
+        else: # using seed
+            seed = np.load(str(seed))
+            seedIdx = np.random.randint(len(seed['notes']))
+            self.state_note[:,:,:] = seed['notes'][seedIdx,:,:]
+            self.state_delta[:,:,:]= seed['times'][seedIdx,:,:]
         self.firstNote = None
     def countFinger(self, x, y, deltas, notes, lim):
         if x>0: return 0
