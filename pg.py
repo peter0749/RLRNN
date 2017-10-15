@@ -335,13 +335,14 @@ class rewardSystem:
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-8, gamma=0.99)
     agent.load(str(sys.argv[1]))
+    seedPos = str(sys.argv[2])
     rewardSys = rewardSystem(0.2,1) ## more sensitive
     done = False
     batch_size = 128
 
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
-        rewardSys.reset() ## initialize states
+        rewardSys.reset(seed=seedPos) ## initialize states
         score_note = 0.
         score_delta = 0.
         for e in xrange(EPISODES):
@@ -355,7 +356,7 @@ if __name__ == "__main__":
                 agent.remember(action_note, action_delta, snote, sdelta, score_note, score_delta, p_n, p_d)
                 snote, sdelta = nnote, ndelta ## update current state
                 if done: ## termination
-                    rewardSys.reset() ## new initial state
+                    rewardSys.reset(seed=seedPos) ## new initial state
                     break
             sys.stderr.write('episode: %d Learning from past... bs: %d\n' % (e, len(agent.notes)))
             logFP.write("%.2f, %.2f\n" % (score_note, score_delta))
