@@ -380,7 +380,7 @@ if __name__ == "__main__":
                 score_note += float(reward_note)
                 score_delta += float(reward_delta)
                 nnote, ndelta = rewardSys.get_state() ## get next state
-                agent.remember(action_note, action_delta, snote, sdelta, score_note, score_delta, p_n, p_d)
+                agent.remember(action_note, action_delta, snote, sdelta, float(reward_note), float(reward_delta), p_n, p_d)
                 snote, sdelta = nnote, ndelta ## update current state
                 if done: ## termination
                     rewardSys.reset(seed=seedPos) ## new initial state
