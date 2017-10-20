@@ -225,13 +225,13 @@ class rewardSystem:
             self.state_note[:,:,:] = seed['notes'][seedIdx,:,:]
             self.state_delta[:,:,:]= seed['times'][seedIdx,:,:]
         self.firstNote = None
-    def countFinger(self, x, y, deltas, notes, lim):
-        if x>0: return 0
+    def countFinger(self, x, y, deltas, notes):
+        if x>0: return 1
         cnt=1 ## self
         for i, v in enumerate(reversed(deltas)): ## others
             cnt += 1 if self.sameTrack(y, notes[segLen-1-i]) else 0
             if v!=0: break
-        return 0 if cnt<=lim else -(cnt-lim)*2
+        return cnt
     def countSameNote(self, x, l):
         cnt = 1
         for v in reversed(l):
@@ -243,17 +243,11 @@ class rewardSystem:
         return self.state_note, self.state_delta
     def scale(self, diffLastNote, delta):
         if diffLastNote>12: ## Too big jump
-            return -6
-        elif diffLastNote==4: ## western
-            return 3
-        elif diffLastNote==8:
-            return 2
-        #elif diffLastNote==7: ## chinese
-            #return -4
-        #elif diffLastNote==5:
-            #return -3
+            return -1
+        elif diffLastNote==4 or diffLastNote==7: ## western
+            return 1
         elif diffLastNote<=2 and delta==0: ## annoying sound
-            return -5
+            return -1
         elif diffLastNote==12 and delta==0: ## full 8
             return 1
         return 0
@@ -297,18 +291,12 @@ class rewardSystem:
             if self.countSameNote(action_note, state_idx_note)>4:
                 done = True ## bad end
             dist, idx = self.checkTrackDist(action_note, action_delta, state_idx_note, state_idx_delta)
-            #if dist>64: ## save ya
-                #reward_note -= 2 ## penalty of long track
             if action_note<pianoKeys: ## is main melody
                 if not idx is None: ## idx points to a nearest accompany note
                     ## find root note
                     rootN = self.findRootNote(idx, state_idx_note, state_idx_delta)
                     dist = abs(rootN-action_note)%12
-                    if dist==0: ## check if valid chord
-                        reward_note += 3
-                    elif dist==8:
-                        reward_note += 2
-                    elif dist==4:
+                    if dist==0 or dist==7 or dist==4: ## check if valid chord
                         reward_note += 1
             ## scale score, not complete yet...
             idx = None
@@ -328,18 +316,19 @@ class rewardSystem:
             lrsNote_new = lrs(lrsi)
             diff = lrsNote_new - lrsNote_old
             if lrsNote_new == 0:
-                reward_note -= 4
+                reward_note -= 1
                 done = True
             elif diff>0: ## check update
-                reward_note += diff
+                if lrsNote_new>8: ## ??
+                    reward_note += 1
                 if lrsNote_new>12:
-                    reward_note -= 3
+                    reward_note -= 1
                     done = True ## bad end, very bad...
             ## not complete yet...
             if action_note<pianoKeys: ## main
-                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 5)
+                reward_delta -= 0 if self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note) <= 5 else 1
             else: ## accompany
-                reward_delta += self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note, 4)
+                reward_delta -= 0 if self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note) <= 4 else 1
 
         ## update state:
         self.state_note = np.roll(self.state_note, -1, axis=1)
