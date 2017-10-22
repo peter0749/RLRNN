@@ -30,7 +30,7 @@ hidden_note=256
 drop_rate=0.2
 
 class PGAgent:
-    def __init__(self, lr=1e-7, gamma=0.95, model): ## learning_rate, gamma, model_to_be_tuned
+    def __init__(self, lr=1e-7, gamma=0.95, model=None): ## learning_rate, gamma, model_to_be_tuned
         self.learning_rate = lr
         self.model = self.build(model) ## warn
         self.notes = [] # 1
