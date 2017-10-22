@@ -135,6 +135,8 @@ class rewardSystem:
             self.state_note[:,:,:] = seed['notes'][seedIdx,:,:]
             self.state_delta[:,:,:]= seed['times'][seedIdx,:,:]
         self.firstNote = None
+    def get_state(self):
+        return self.state_note.copy(), self.state_delta.copy()
     def reward(self, action_note, action_delta, verbose=False):
         pitchStyleReward = 0.
         tickStyleReward = 0.
