@@ -32,7 +32,7 @@ drop_rate=0.2
 class PGAgent:
     def __init__(self, lr=1e-7, gamma=0.95, model=None): ## learning_rate, gamma, model_to_be_tuned
         self.learning_rate = lr
-        self.model = self.build(model) ## warn
+        self.model = self._build_model(model) ## warn
         self.notes = [] # 1
         self.deltas= [] # 2
         self.pnotes= [] # 3
