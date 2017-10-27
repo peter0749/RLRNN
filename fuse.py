@@ -15,7 +15,6 @@ from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormaliz
 from keras.optimizers import SGD
 from keras import backend as K
 from keras.models import load_model
-from attention_block import SoftAttentionBlock
 from itertools import groupby
 from operator import itemgetter
 

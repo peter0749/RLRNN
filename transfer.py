@@ -15,7 +15,6 @@ from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormaliz
 from keras.optimizers import SGD
 from keras import backend as K
 from keras.models import load_model
-from attention_block import SoftAttentionBlock
 from itertools import groupby
 from operator import itemgetter
 
@@ -66,7 +65,6 @@ class PGAgent:
         deltaEncode = LSTM(hidden_delta, return_sequences=True, dropout=drop_rate)(deltaEncode)
 
         codec = concatenate([noteEncode, deltaEncode], axis=-1)
-        codec = SoftAttentionBlock(codec, segLen, hidden_note+hidden_delta)
         codec = LSTM(600, return_sequences=True, dropout=drop_rate, activation='softsign')(codec)
         codec = LSTM(600, return_sequences=False, dropout=drop_rate, activation='softsign')(codec)
         encoded = Dropout(drop_rate)(codec)
