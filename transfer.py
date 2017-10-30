@@ -69,11 +69,14 @@ class PGAgent:
         codec = LSTM(600, return_sequences=False, dropout=drop_rate, activation='tanh')(codec)
         encoded = Dropout(drop_rate)(codec)
 
-        fc_notes = BatchNormalization()(encoded)
-        pred_notes = Dense(vecLen, kernel_initializer='normal', activation='softmax', name='note_output')(fc_notes) ## output score
+        fc_notes = Dense(vecLen, kernel_initializer='normal')(encoded) ## output PMF
+        fc_notes = BatchNormalization()(fc_notes)
+        pred_notes = Activation('softmax', name='note_output')(fc_notes)
 
-        fc_delta = BatchNormalization()(encoded)
-        pred_delta = Dense(maxdelta, kernel_initializer='normal', activation='softmax', name='time_output')(fc_delta) ## output score
+        fc_delta = Dense(maxdelta, kernel_initializer='normal')(encoded) ## output PMF
+        fc_delta = BatchNormalization()(fc_delta)
+        pred_delta = Activation('softmax', name='time_output')(fc_delta) ## output PMF
+
         model = Model([noteInput, deltaInput], [pred_notes, pred_delta])
 
         model.compile(loss='categorical_crossentropy',
