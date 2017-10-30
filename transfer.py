@@ -65,8 +65,8 @@ class PGAgent:
         deltaEncode = LSTM(hidden_delta, return_sequences=True, dropout=drop_rate)(deltaEncode)
 
         codec = concatenate([noteEncode, deltaEncode], axis=-1)
-        codec = LSTM(600, return_sequences=True, dropout=drop_rate, activation='softsign')(codec)
-        codec = LSTM(600, return_sequences=False, dropout=drop_rate, activation='softsign')(codec)
+        codec = LSTM(600, return_sequences=True, dropout=drop_rate, activation='tanh')(codec)
+        codec = LSTM(600, return_sequences=False, dropout=drop_rate, activation='tanh')(codec)
         encoded = Dropout(drop_rate)(codec)
 
         fc_notes = BatchNormalization()(encoded)
