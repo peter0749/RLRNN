@@ -229,6 +229,9 @@ class rewardSystem:
             self.state_note[:,:,:] = seed['notes'][seedIdx,:,:]
             self.state_delta[:,:,:]= seed['times'][seedIdx,:,:]
         self.firstNote = None
+        self.actions_note = []
+        self.actions_delta= []
+        self.tick_counter = 0
     def countFinger(self, x, y, deltas, notes):
         if x>0: return 1
         cnt=1 ## self
@@ -327,7 +330,7 @@ class rewardSystem:
         if len(self.actions_note)>0:
             if self.sameTrack(action_note, self.actions_note[-1]):
                 reward_note += self.scale(abs(action_note-self.actions_note[-1]), action_delta)
-        if self.tick_counter+action_delta>=32:
+        if self.tick_counter%32+action_delta>=32:
             done = True
             state_idx_note = self.actions_note
             state_idx_delta = self.actions_delta
@@ -347,7 +350,6 @@ class rewardSystem:
             reward_note += self.checkTune()
             self.actions_note = []
             self.actions_delta= []
-            self.tick_counter = 0
         self.tick_counter += action_delta
         self.actions_note.append(action_note)
         self.actions_delta.append(action_delta)
@@ -369,6 +371,7 @@ class rewardSystem:
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
         return reward_note, reward_delta, done
 
+
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99)
     agent.load(str(sys.argv[1]))
@@ -385,7 +388,7 @@ if __name__ == "__main__":
             done = False
             while not done:
                 action_note, action_delta, p_n, p_d = agent.act([snote, sdelta]) ## action on state
-                reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False) ## reward on state
+                reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=True) ## reward on state
                 score_note += float(reward_note)
                 score_delta += float(reward_delta)
                 nnote, ndelta = rewardSys.get_state() ## get next state
@@ -401,4 +404,3 @@ if __name__ == "__main__":
             if e % 20 == 0:
                 agent.save("./pg/melody-ddqn-{}.h5".format(e))
                 rewardSys.reset() ## new initial state
-
