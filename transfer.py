@@ -330,14 +330,14 @@ class rewardSystem:
         if len(self.actions_note)>0:
             if self.sameTrack(action_note, self.actions_note[-1]):
                 reward_note += self.scale(abs(action_note-self.actions_note[-1]), action_delta)
-        if self.tick_counter%32+action_delta>=32:
+            if self.countSameNote(action_note, self.actions_note)>4: reward_note-=1
+            dist, idx = self.checkTrackDist(action_note, action_delta, self.actions_note, self.actions_delta)
+            if idx is None: ## idx points to a nearest accompany note
+                reward_note -= 1 ## the other track is dead
+        if len(self.actions_note)>0 and self.tick_counter%32+action_delta>=32:
             done = True
             state_idx_note = self.actions_note
             state_idx_delta = self.actions_delta
-            if self.countSameNote(action_note, state_idx_note)>4: reward_note-=1
-            dist, idx = self.checkTrackDist(action_note, action_delta, state_idx_note, state_idx_delta)
-            if idx is None: ## idx points to a nearest accompany note
-                reward_note -= 1 ## the other track is dead
             ## check if generate longer longest repeat substring
             lrsi = lrs(state_idx_note)
             reward_note -= lrsi/float(len(state_idx_note)) ## not allow self similiarity in small section
@@ -370,7 +370,6 @@ class rewardSystem:
         reward_note = reward_note*self.c+self.d*pitchStyleReward
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
         return reward_note, reward_delta, done
-
 
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99)
