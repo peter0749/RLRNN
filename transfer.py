@@ -11,7 +11,7 @@ import numpy as np
 from collections import deque
 import math
 from keras.models import Sequential, Model
-from keras.layers import Dense, Input, concatenate, Dropout, BatchNormalization, Activation
+from keras.layers import Dense, Input, concatenate, Dropout, BatchNormalization, Activation, LSTM
 from keras.optimizers import SGD
 from keras import backend as K
 from keras.models import load_model
