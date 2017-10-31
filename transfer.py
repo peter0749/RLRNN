@@ -382,7 +382,8 @@ if __name__ == "__main__":
         score_delta = 0.
         for e in xrange(EPISODES):
             snote, sdelta = rewardSys.get_state() ## give initial state
-            while True:
+            done = False
+            while not done:
                 action_note, action_delta, p_n, p_d = agent.act([snote, sdelta]) ## action on state
                 reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False) ## reward on state
                 score_note += float(reward_note)
@@ -390,9 +391,6 @@ if __name__ == "__main__":
                 nnote, ndelta = rewardSys.get_state() ## get next state
                 agent.remember(action_note, action_delta, snote, sdelta, float(reward_note), float(reward_delta), p_n, p_d)
                 snote, sdelta = nnote, ndelta ## update current state
-                if done: ## termination
-                    rewardSys.reset() ## new initial state
-                    break
             if len(agent.notes)<2:
                 agent.reset()
                 continue
@@ -400,5 +398,7 @@ if __name__ == "__main__":
             logFP.write("%.2f, %.2f\n" % (score_note, score_delta))
             score_note, score_delta = 0, 0
             agent.train()
-            if e % 10 == 0:
+            if e % 20 == 0:
                 agent.save("./pg/melody-ddqn-{}.h5".format(e))
+                rewardSys.reset() ## new initial state
+
