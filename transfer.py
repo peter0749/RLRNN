@@ -395,6 +395,9 @@ if __name__ == "__main__":
                 if done: ## termination
                     rewardSys.reset() ## new initial state
                     break
+            if len(agent.notes)<2:
+                agent.reset()
+                continue
             sys.stderr.write('episode: %d Learning from past... bs: %d\n' % (e, len(agent.notes)))
             logFP.write("%.2f, %.2f\n" % (score_note, score_delta))
             score_note, score_delta = 0, 0
