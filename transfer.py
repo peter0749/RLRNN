@@ -208,12 +208,15 @@ class rewardSystem:
     def __init__(self, rat, oldr, model_dir=None):
         self.rewardRNN = None
         if not model_dir is None:
-            self.rewardRNN = [ (load_model(str(model_dir)+'/'+r), self.fn2float(r)) for r in os.listdir(str(model_dir)) ]
+            self.rewardRNN = [ (load_model(str(model_dir)+'/'+r, custom_objects={'SRU':SRU}), self.fn2float(r)) for r in os.listdir(str(model_dir)) ]
         self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
         self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
         self.firstNote = None
         self.c = rat
         self.d = oldr
+        self.tick_counter = 0
+        self.actions_note = []
+        self.actions_delta = []
     def fn2float(self, s):
         return float('.'.join(s.split('_')[-1].split('.')[:-1]))
     def reset(self, seed=None):
@@ -230,7 +233,7 @@ class rewardSystem:
         if x>0: return 1
         cnt=1 ## self
         for i, v in enumerate(reversed(deltas)): ## others
-            cnt += 1 if self.sameTrack(y, notes[segLen-1-i]) else 0
+            cnt += 1 if self.sameTrack(y, notes[len(deltas)-1-i]) else 0
             if v!=0: break
         return cnt
     def countSameNote(self, x, l):
@@ -258,7 +261,7 @@ class rewardSystem:
         accumTick=delta
         i = None
         for ti, v in enumerate(reversed(deltas)):
-            i = segLen-1-ti
+            i = len(deltas)-1-ti
             if not self.sameTrack(note ,notes[i]): break ## find accompany
             i = None
             accumTick += v
@@ -271,6 +274,43 @@ class rewardSystem:
                 if deltas[i]>0: break ## if not stack on others, break
             else: break ## not an accompany note
         return rootN
+    def checkTune(self):
+        AC = lambda x, s: x in s
+        tkeys = []
+        for n in self.actions_note:
+            if n<pianoKeys: ## main
+                tkeys.append(int(n+36))
+            else:
+                tkeys.append(int(n-pianoKeys+36))
+        noteHist, _ = np.histogram(np.array(tkeys)%12, bins=12)
+        histArg = np.argsort(-noteHist)
+        tune = set(histArg[:3]) ## decreaseing order, top 3
+        key =  set(histArg[:7]) ## decreaseing order, top 7
+        main = [ (v+36)%12 for v in self.actions_note if v<pianoKeys ]
+        accompany = [ (v-pianoKeys+36)%12 for v in self.actions_note if v>=pianoKeys ]
+        main_score = 0
+        accompany_score = 0
+        for n in main:
+            if not n in key: main_score -= 1
+        for n in accompany:
+            if not n in key: accompany_score -= 1
+        for i in xrange(1, len(main)):
+            last = main[i-1]
+            curr = main[i]
+            lastA= AC(last,main)
+            currA= AC(curr,main)
+            if not lastA and currA: ## inact -> act
+                main_score += 1
+        main_score /= float(len(main))
+        for i in xrange(1, len(accompany)):
+            last = accompany[i-1]
+            curr = accompany[i]
+            lastA= AC(last,accompany)
+            currA= AC(curr,accompany)
+            if not lastA and currA: ## inact -> act
+                accompany_score += 1
+        accompany_score /= float(len(accompany))
+        return main_score+accompany_score
     def reward(self, action_note, action_delta, verbose=False):
         done = False
         pitchStyleReward = 0.
@@ -285,51 +325,31 @@ class rewardSystem:
             pitchStyleReward /= tot_r
             tickStyleReward /= tot_r
         reward_note=0
-        reward_delta= -1 if action_delta>0 and action_delta<4 else 0 ## prevent unfavored tick: (0,4)
-        if np.sum(self.state_note)==segLen and np.sum(self.state_delta)==segLen:
-            state_idx_note = [ np.where(r==1)[0][0] for r in self.state_note[0] ]
-            state_idx_delta = [ np.where(r==1)[0][0] for r in self.state_delta[0] ]
-            if self.countSameNote(action_note, state_idx_note)>4:
-                done = True ## bad end
+        reward_delta=0
+        if self.tick_counter+action_delta>=32:
+            done = True
+            state_idx_note = self.actions_note
+            state_idx_delta = self.actions_delta
+            if self.countSameNote(action_note, state_idx_note)>4: reward_note-=1
             dist, idx = self.checkTrackDist(action_note, action_delta, state_idx_note, state_idx_delta)
-            if action_note<pianoKeys: ## is main melody
-                if not idx is None: ## idx points to a nearest accompany note
-                    ## find root note
-                    rootN = self.findRootNote(idx, state_idx_note, state_idx_delta)
-                    dist = abs(rootN-action_note)%12
-                    if dist==0 or dist==7 or dist==4: ## check if valid chord
-                        reward_note += 1
-            ## scale score, not complete yet...
-            idx = None
-            for i, v in enumerate(reversed(state_idx_note)):
-                if self.sameTrack(v, action_note):
-                    idx = -1-i ## find last note in current track
-                    break
-                elif state_idx_delta[-1-i]>0:
-                    break
-            if not idx is None:
-                diffLastNote = abs(action_note - state_idx_note[idx])
-                reward_note += self.scale(diffLastNote, action_delta)
+            if idx is None: ## idx points to a nearest accompany note
+                reward_note -= 1 ## the other track is dead
             ## check if generate longer longest repeat substring
-            lrsi = state_idx_note
-            lrsNote_old = lrs(lrsi)
-            lrsi.append(action_note)
-            lrsNote_new = lrs(lrsi)
-            diff = lrsNote_new - lrsNote_old
-            if lrsNote_new == 0:
-                reward_note -= 1
-                done = True
-            elif diff>0: ## check update
-                if lrsNote_new>8: ## ??
-                    reward_note += 1
-                if lrsNote_new>12:
-                    reward_note -= 1
-                    done = True ## bad end, very bad...
+            lrsi = lrs(state_idx_note)
+            reward_note -= lrsi/float(len(state_idx_note)) ## not allow self similiarity in small section
             ## not complete yet...
             if action_note<pianoKeys: ## main
                 reward_delta -= 0 if self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note) <= 5 else 1
             else: ## accompany
-                reward_delta -= 0 if self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note) <= 4 else 1
+                reward_delta -= 0 if self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note) <= 5 else 1
+            ## too many fingers
+            reward_note += self.checkTune()
+            self.actions_note = []
+            self.actions_delta= []
+            self.tick_counter = 0
+        self.tick_counter += action_delta
+        self.actions_note.append(action_note)
+        self.actions_delta.append(action_delta)
 
         ## update state:
         self.state_note = np.roll(self.state_note, -1, axis=1)
@@ -347,7 +367,6 @@ class rewardSystem:
         reward_note = reward_note*self.c+self.d*pitchStyleReward
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
         return reward_note, reward_delta, done
-
 
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99)
