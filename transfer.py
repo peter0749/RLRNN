@@ -11,7 +11,7 @@ import numpy as np
 from collections import deque
 import math
 from keras.models import Sequential, Model
-from keras.layers import Dense, Input, LSTM, concatenate, Dropout, BatchNormalization
+from keras.layers import Dense, Input, concatenate, Dropout, BatchNormalization, Activation
 from keras.optimizers import SGD
 from keras import backend as K
 from keras.models import load_model
@@ -290,26 +290,28 @@ class rewardSystem:
         accompany = [ (v-pianoKeys+36)%12 for v in self.actions_note if v>=pianoKeys ]
         main_score = 0
         accompany_score = 0
-        for n in main:
-            if not n in key: main_score -= 1
-        for n in accompany:
-            if not n in key: accompany_score -= 1
-        for i in xrange(1, len(main)):
-            last = main[i-1]
-            curr = main[i]
-            lastA= AC(last,main)
-            currA= AC(curr,main)
-            if not lastA and currA: ## inact -> act
-                main_score += 1
-        main_score /= float(len(main))
-        for i in xrange(1, len(accompany)):
-            last = accompany[i-1]
-            curr = accompany[i]
-            lastA= AC(last,accompany)
-            currA= AC(curr,accompany)
-            if not lastA and currA: ## inact -> act
-                accompany_score += 1
-        accompany_score /= float(len(accompany))
+        if len(main)>0:
+            for n in main:
+                if not n in key: main_score -= 1
+            for i in xrange(1, len(main)):
+                last = main[i-1]
+                curr = main[i]
+                lastA= AC(last,main)
+                currA= AC(curr,main)
+                if not lastA and currA: ## inact -> act
+                    main_score += 1
+            main_score /= float(len(main))
+        if len(accompany)>0:
+            for n in accompany:
+                if not n in key: accompany_score -= 1
+            for i in xrange(1, len(accompany)):
+                last = accompany[i-1]
+                curr = accompany[i]
+                lastA= AC(last,accompany)
+                currA= AC(curr,accompany)
+                if not lastA and currA: ## inact -> act
+                    accompany_score += 1
+            accompany_score /= float(len(accompany))
         return main_score+accompany_score
     def reward(self, action_note, action_delta, verbose=False):
         done = False
@@ -368,22 +370,21 @@ class rewardSystem:
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
         return reward_note, reward_delta, done
 
+
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99)
     agent.load(str(sys.argv[1]))
-    seedPos = str(sys.argv[2])
-    rewardSys = rewardSystem(0.2,1,model_dir = str(sys.argv[3])) ## more sensitive
+    rewardSys = rewardSystem(0.2,1,model_dir = str(sys.argv[2])) ## more sensitive
     done = False
-    batch_size = 128
 
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
         logFP.write('pitch, tick\n')
-        rewardSys.reset(seed=seedPos) ## initialize states
+        rewardSys.reset() ## initialize states
         score_note = 0.
         score_delta = 0.
         for e in xrange(EPISODES):
             snote, sdelta = rewardSys.get_state() ## give initial state
-            for time in xrange(batch_size):
+            while True:
                 action_note, action_delta, p_n, p_d = agent.act([snote, sdelta]) ## action on state
                 reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=False) ## reward on state
                 score_note += float(reward_note)
@@ -392,7 +393,7 @@ if __name__ == "__main__":
                 agent.remember(action_note, action_delta, snote, sdelta, float(reward_note), float(reward_delta), p_n, p_d)
                 snote, sdelta = nnote, ndelta ## update current state
                 if done: ## termination
-                    rewardSys.reset(seed=seedPos) ## new initial state
+                    rewardSys.reset() ## new initial state
                     break
             sys.stderr.write('episode: %d Learning from past... bs: %d\n' % (e, len(agent.notes)))
             logFP.write("%.2f, %.2f\n" % (score_note, score_delta))
