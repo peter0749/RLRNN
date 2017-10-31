@@ -208,7 +208,7 @@ class rewardSystem:
     def __init__(self, rat, oldr, model_dir=None):
         self.rewardRNN = None
         if not model_dir is None:
-            self.rewardRNN = [ (load_model(str(model_dir)+'/'+r, custom_objects={'SRU':SRU}), self.fn2float(r)) for r in os.listdir(str(model_dir)) ]
+            self.rewardRNN = [ (load_model(str(model_dir)+'/'+r), self.fn2float(r)) for r in os.listdir(str(model_dir)) ]
         self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
         self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
         self.firstNote = None
