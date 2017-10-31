@@ -248,12 +248,8 @@ class rewardSystem:
     def scale(self, diffLastNote, delta):
         if diffLastNote>12: ## Too big jump
             return -1
-        elif diffLastNote==4 or diffLastNote==7: ## western
-            return 1
         elif diffLastNote<=2 and delta==0: ## annoying sound
             return -1
-        elif diffLastNote==12 and delta==0: ## full 8
-            return 1
         return 0
     def sameTrack(self, a, b):
         return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
@@ -286,8 +282,8 @@ class rewardSystem:
         histArg = np.argsort(-noteHist)
         tune = set(histArg[:3]) ## decreaseing order, top 3
         key =  set(histArg[:7]) ## decreaseing order, top 7
-        main = [ (v+36)%12 for v in self.actions_note if v<pianoKeys ]
-        accompany = [ (v-pianoKeys+36)%12 for v in self.actions_note if v>=pianoKeys ]
+        main = [ (v+36)%12 for i, v in enumerate(self.actions_note) if v<pianoKeys and self.actions_delta[i]>0 ]
+        accompany = [ (v-pianoKeys+36)%12 for i, v in enumerate(self.actions_note) if v>=pianoKeys and self.actions_delta[i]>0 ]
         main_score = 0
         accompany_score = 0
         if len(main)>0:
@@ -328,6 +324,9 @@ class rewardSystem:
             tickStyleReward /= tot_r
         reward_note=0
         reward_delta=0
+        if len(self.actions_note)>0:
+            if self.sameTrack(action_note, self.actions_note[-1]):
+                reward_note += self.scale(abs(action_note-self.actions_note[-1]), action_delta)
         if self.tick_counter+action_delta>=32:
             done = True
             state_idx_note = self.actions_note
@@ -369,7 +368,6 @@ class rewardSystem:
         reward_note = reward_note*self.c+self.d*pitchStyleReward
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
         return reward_note, reward_delta, done
-
 
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99)
