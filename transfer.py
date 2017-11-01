@@ -206,11 +206,12 @@ def suffix_array(text, _step=16):
     return sa, rsa, lcp
 
 def acf(x, l):
+    x = np.array(x)
     y1 = x[:-l]
     y2 = x[l:]
-    xm = np.mean(x)
+    xm = x.mean()
     sump = np.sum((y1-xm)*(y2-xm))
-    return sump / (np.var(x)*(len(x)-lag))
+    return sump / (x.var()*(len(x)-lag))
 
 class rewardSystem:
     def __init__(self, rat, model_dir=None): ## higher rat -> more mt score
