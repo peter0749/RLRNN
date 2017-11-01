@@ -395,7 +395,7 @@ class rewardSystem:
         return float(reward_note), float(reward_delta), done
 
 if __name__ == "__main__":
-    agent = PGAgent(lr=1e-7, gamma=0.99)
+    agent = PGAgent(lr=1e-7, gamma=0.99, batch_size=128)
     agent.load(str(sys.argv[1]))
     rewardSys = rewardSystem(0.3,model_dir = str(sys.argv[2])) ## more sensitive, 0.2, 0.8
     done = False
