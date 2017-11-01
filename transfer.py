@@ -368,8 +368,8 @@ class rewardSystem:
         if self.firstNote is None:
             self.firstNote = action_note
         if verbose:
-            sys.stderr.write("reward_note = %d, %.2f, %s\n" % (reward_note, pitchStyleReward, "T" if done else "F"))
-            sys.stderr.write("reward_delta = %d, %.2f\n" % (reward_delta, tickStyleReward))
+            sys.stderr.write("reward_note = %.2f, %.2f, %s\n" % (reward_note, pitchStyleReward, "T" if done else "F"))
+            sys.stderr.write("reward_delta = %.2f, %.2f\n" % (reward_delta, tickStyleReward))
         reward_note = reward_note*self.c+self.d*pitchStyleReward
         reward_delta= reward_delta*self.c+self.d*tickStyleReward
         return reward_note, reward_delta, done
