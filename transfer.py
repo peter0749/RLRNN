@@ -327,6 +327,7 @@ class rewardSystem:
             tickStyleReward /= tot_r
         reward_note=0
         reward_delta=0
+        idx = None
         if len(self.actions_note)>0:
             if self.sameTrack(action_note, self.actions_note[-1]):
                 reward_note += self.scale(abs(action_note-self.actions_note[-1]), action_delta)
@@ -334,12 +335,12 @@ class rewardSystem:
             dist, idx = self.checkTrackDist(action_note, action_delta, self.actions_note, self.actions_delta)
             if idx is None: ## idx points to a nearest accompany note
                 reward_note -= 1 ## the other track is dead
-                if np.sum(np.array(self.actions_delta)<=2)==len(self.actions_delta): ## too fast, too annoying
-                    reward_delta -= 1
-        if len(self.actions_note)>0 and self.tick_counter%32+action_delta>=32:
+        if len(self.actions_note)>0 and self.tick_counter%32+action_delta>=32: ## complete a half of segment
             done = True
             state_idx_note = self.actions_note
             state_idx_delta = self.actions_delta
+            if idx is None and np.sum(np.array(state_idx_delta)<=2)==len(state_idx_delta): ## too fast, too annoying
+                reward_delta -= 1
             ## check if generate longer longest repeat substring
             lrsi = lrs(state_idx_note)
             reward_note -= lrsi/float(len(state_idx_note)) ## not allow self similiarity in small section
