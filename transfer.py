@@ -29,7 +29,8 @@ hidden_note=256
 drop_rate=0.2
 
 class PGAgent:
-    def __init__(self, lr=1e-7, gamma=0.95): ## low lr to tune all weights
+    def __init__(self, lr=1e-7, gamma=0.95, batch_size=128): ## low lr to tune all weights
+        self.batch_size = batch_size
         self.learning_rate = lr
         self.model = self._build_model()
         self.notes = [] # 1
@@ -133,7 +134,7 @@ class PGAgent:
         deltas= np.array(self.deltas)
         target_n = np.vstack(self.pnotes) + self.learning_rate * grad_n
         target_d = np.vstack(self.pdeltas) + self.learning_rate * grad_d
-        self.model.train_on_batch([notes[:,0,:,:], deltas[:,0,:,:]], [target_n, target_d])
+        self.model.fit([notes[:,0,:,:], deltas[:,0,:,:]], [target_n, target_d], batch_size=self.batch_size, epochs=1)
         self.reset() ## forget it
 
     def load(self, name):
@@ -204,11 +205,18 @@ def suffix_array(text, _step=16):
         lcp[0] = 0
     return sa, rsa, lcp
 
+def acf(x, l):
+    y1 = x[:-l]
+    y2 = x[l:]
+    xm = np.mean(x)
+    sump = np.sum((y1-xm)*(y2-xm))
+    return sump / (np.var(x)*(len(x)-lag))
+
 class rewardSystem:
     def __init__(self, rat, model_dir=None): ## higher rat -> more mt score
         self.rewardRNN = None
         if not model_dir is None:
-            self.rewardRNN = [ (load_model(str(model_dir)+'/'+r, custom_objects={'SRU':SRU}), self.fn2float(r)) for r in os.listdir(str(model_dir)) ]
+            self.rewardRNN = [ (load_model(str(model_dir)+'/'+r), self.fn2float(r)) for r in os.listdir(str(model_dir)) ]
         self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
         self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
         self.firstNote = None
@@ -302,6 +310,7 @@ class rewardSystem:
                 currA= AC(curr,main)
                 if not lastA and currA: ## inact -> act
                     main_score += 1
+            if main[0]==main[-1] and main[0]==histArg[0]: main_score += 1
             main_score /= float(len(main))
         if len(accompany)>0:
             for n in accompany:
@@ -339,29 +348,29 @@ class rewardSystem:
             dist, idx = self.checkTrackDist(action_note, action_delta, self.actions_note, self.actions_delta)
             if idx is None: ## idx points to a nearest accompany note
                 reward_note -= 1 ## the other track is dead
-        smalllrs=0
-        largelrs=0
         if len(self.actions_note)>0 and self.tick_counter%32+action_delta>=32: ## complete a half of segment
             if idx is None and np.sum(np.array(self.actions_delta)<=2)==len(self.actions_delta): ## too fast, too annoying
                 reward_delta -= 1
-            ## check if generate longer longest repeat substring
-            smalllrs = lrs(self.actions_note)
-            reward_note -= smalllrs/float(len(self.actions_note)) ## not allow self similiarity in small section
-            ## not complete yet...
             if action_note<pianoKeys: ## main
                 reward_delta -= 0 if self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note) <= 5 else 1
             else: ## accompany
                 reward_delta -= 0 if self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note) <= 5 else 1
             ## too many fingers
-            reward_note += self.checkTune()
+            reward_note += self.checkTune() ## score on melody
             self.LA.extend(self.actions_note) ## append one full segment into LA
             self.actions_note = []
             self.actions_delta= []
-        if len(self.LA)>0 and self.tick_counter%256+action_delta>=256: ## 32*8=256, 4 segments
+        if len(self.LA)>0 and self.tick_counter%512+action_delta>=512: ## 32*2*8 = 512, 8 full segments, needs large VRAMs
             done = True
-            largelrs = lrs(self.LA)
-            if smalllrs<largelrs:
-                reward_note -= largelrs/float(len(self.LA)) ## not allow self similiarity in small section
+            mean_acf = 0.
+            acfl = min(len(self.LA),3)
+            for l in xrange(acfl): mean_acf += acf(self.LA, l)
+            mean_acf /= float(acfl)
+            reward_note -= mean_acf ## penlty of acf
+            lrsLA = lrs(self.LA)
+            if lrsLA>=20: ## long phrase
+                lrsnorm = lrsLA / float(len(self.LA))
+                reward_note += lrsnorm ## longest repeated substring: longer string -> bigger structure
             self.LA = []
 
         self.tick_counter += action_delta
@@ -417,4 +426,3 @@ if __name__ == "__main__":
             if e % 20 == 0:
                 agent.save("./pg/melody-ddqn-{}.h5".format(e))
                 rewardSys.reset() ## new initial state
-
