@@ -211,7 +211,7 @@ def acf(x, l):
     y2 = x[l:]
     xm = x.mean()
     sump = np.sum((y1-xm)*(y2-xm))
-    return sump / (x.var()*(len(x)-lag))
+    return sump / (x.var()*(len(x)-l))
 
 class rewardSystem:
     def __init__(self, rat, model_dir=None): ## higher rat -> more mt score
