@@ -205,15 +205,17 @@ def suffix_array(text, _step=16):
     return sa, rsa, lcp
 
 class rewardSystem:
-    def __init__(self, rat, oldr, model_dir=None):
+    def __init__(self, rat, model_dir=None): ## higher rat -> more mt score
         self.rewardRNN = None
         if not model_dir is None:
-            self.rewardRNN = [ (load_model(str(model_dir)+'/'+r), self.fn2float(r)) for r in os.listdir(str(model_dir)) ]
+            self.rewardRNN = [ (load_model(str(model_dir)+'/'+r, custom_objects={'SRU':SRU}), self.fn2float(r)) for r in os.listdir(str(model_dir)) ]
         self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
         self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
         self.firstNote = None
-        self.c = rat
-        self.d = oldr
+        C = 0.5
+        rat = np.clip(rat,0,C)
+        self.d = C-rat ## score from original model
+        self.c = 1-self.d ## music theorem score rate
         self.tick_counter = 0
         self.actions_note = []
         self.actions_delta = []
@@ -312,6 +314,7 @@ class rewardSystem:
                     accompany_score += 1
             accompany_score /= float(len(accompany))
         return main_score+accompany_score
+
     def reward(self, action_note, action_delta, verbose=False):
         done = False
         pitchStyleReward = 0.
@@ -370,14 +373,14 @@ class rewardSystem:
         if verbose:
             sys.stderr.write("reward_note = %.2f, %.2f, %s\n" % (reward_note, pitchStyleReward, "T" if done else "F"))
             sys.stderr.write("reward_delta = %.2f, %.2f\n" % (reward_delta, tickStyleReward))
-        reward_note = reward_note*self.c+self.d*pitchStyleReward
-        reward_delta= reward_delta*self.c+self.d*tickStyleReward
-        return reward_note, reward_delta, done
+        reward_note = np.clip(reward_note,-1,1)*self.c+self.d*np.clip(pitchStyleReward,-1,1)
+        reward_delta= np.clip(reward_delta,-1,1)*self.c+self.d*np.clip(tickStyleReward,-1,1)
+        return float(reward_note), float(reward_delta), done
 
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99)
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.2,1,model_dir = str(sys.argv[2])) ## more sensitive
+    rewardSys = rewardSystem(0.05,model_dir = str(sys.argv[2])) ## more sensitive
     done = False
 
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
@@ -394,7 +397,7 @@ if __name__ == "__main__":
                 score_note += float(reward_note)
                 score_delta += float(reward_delta)
                 nnote, ndelta = rewardSys.get_state() ## get next state
-                agent.remember(action_note, action_delta, snote, sdelta, float(reward_note), float(reward_delta), p_n, p_d)
+                agent.remember(action_note, action_delta, snote, sdelta, reward_note, reward_delta, p_n, p_d)
                 snote, sdelta = nnote, ndelta ## update current state
             if len(agent.notes)<2:
                 agent.reset()
@@ -406,3 +409,5 @@ if __name__ == "__main__":
             if e % 20 == 0:
                 agent.save("./pg/melody-ddqn-{}.h5".format(e))
                 rewardSys.reset() ## new initial state
+
+
