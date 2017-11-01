@@ -334,6 +334,8 @@ class rewardSystem:
             dist, idx = self.checkTrackDist(action_note, action_delta, self.actions_note, self.actions_delta)
             if idx is None: ## idx points to a nearest accompany note
                 reward_note -= 1 ## the other track is dead
+                if np.sum(np.array(self.actions_delta)<=2)==len(self.actions_delta): ## too fast, too annoying
+                    reward_delta -= 1
         if len(self.actions_note)>0 and self.tick_counter%32+action_delta>=32:
             done = True
             state_idx_note = self.actions_note
