@@ -365,7 +365,7 @@ class rewardSystem:
             done = True
             mean_acf = 0.
             acfl = min(len(self.LA),3)
-            for l in xrange(acfl): mean_acf += acf(self.LA, l)
+            for l in xrange(acfl): mean_acf += acf(self.LA, l+1)
             mean_acf /= float(acfl)
             reward_note -= mean_acf ## penlty of acf
             lrsLA = lrs(self.LA)
