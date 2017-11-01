@@ -233,6 +233,7 @@ class rewardSystem:
         self.firstNote = None
         self.actions_note = []
         self.actions_delta= []
+        self.LA = []
         self.tick_counter = 0
     def countFinger(self, x, y, deltas, notes):
         if x>0: return 1
@@ -338,24 +339,31 @@ class rewardSystem:
             dist, idx = self.checkTrackDist(action_note, action_delta, self.actions_note, self.actions_delta)
             if idx is None: ## idx points to a nearest accompany note
                 reward_note -= 1 ## the other track is dead
+        smalllrs=0
+        largelrs=0
         if len(self.actions_note)>0 and self.tick_counter%32+action_delta>=32: ## complete a half of segment
-            done = True
-            state_idx_note = self.actions_note
-            state_idx_delta = self.actions_delta
-            if idx is None and np.sum(np.array(state_idx_delta)<=2)==len(state_idx_delta): ## too fast, too annoying
+            if idx is None and np.sum(np.array(self.actions_delta)<=2)==len(self.actions_delta): ## too fast, too annoying
                 reward_delta -= 1
             ## check if generate longer longest repeat substring
-            lrsi = lrs(state_idx_note)
-            reward_note -= lrsi/float(len(state_idx_note)) ## not allow self similiarity in small section
+            smalllrs = lrs(self.actions_note)
+            reward_note -= smalllrs/float(len(self.actions_note)) ## not allow self similiarity in small section
             ## not complete yet...
             if action_note<pianoKeys: ## main
-                reward_delta -= 0 if self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note) <= 5 else 1
+                reward_delta -= 0 if self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note) <= 5 else 1
             else: ## accompany
-                reward_delta -= 0 if self.countFinger(action_delta, action_note, state_idx_delta, state_idx_note) <= 5 else 1
+                reward_delta -= 0 if self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note) <= 5 else 1
             ## too many fingers
             reward_note += self.checkTune()
+            self.LA.extend(self.actions_note) ## append one full segment into LA
             self.actions_note = []
             self.actions_delta= []
+        if len(self.LA)>0 and self.tick_counter%256+action_delta>=256: ## 32*8=256, 4 segments
+            done = True
+            largelrs = lrs(self.LA)
+            if smalllrs<largelrs:
+                reward_note -= largelrs/float(len(self.LA)) ## not allow self similiarity in small section
+            self.LA = []
+
         self.tick_counter += action_delta
         self.actions_note.append(action_note)
         self.actions_delta.append(action_delta)
@@ -380,7 +388,7 @@ class rewardSystem:
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99)
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.05,model_dir = str(sys.argv[2])) ## more sensitive
+    rewardSys = rewardSystem(0.3,model_dir = str(sys.argv[2])) ## more sensitive, 0.2, 0.8
     done = False
 
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
@@ -409,5 +417,4 @@ if __name__ == "__main__":
             if e % 20 == 0:
                 agent.save("./pg/melody-ddqn-{}.h5".format(e))
                 rewardSys.reset() ## new initial state
-
 
