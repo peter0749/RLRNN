@@ -11,7 +11,7 @@ import numpy as np
 from collections import deque
 import math
 from keras.models import Sequential, Model
-from keras.layers import Dense, Input, concatenate, Dropout, BatchNormalization, Activation, LSTM
+from keras.layers import Dense, Input, concatenate, Dropout, BatchNormalization, Activation, CuDNNLSTM
 from keras.optimizers import SGD
 from keras import backend as K
 from keras.models import load_model
@@ -58,16 +58,20 @@ class PGAgent:
     def _build_model(self):
         # Neural Net for PG learning Model
         noteInput  = Input(shape=(segLen, vecLen))
-        noteEncode = LSTM(hidden_note, return_sequences=True, dropout=drop_rate)(noteInput)
-        noteEncode = LSTM(hidden_note, return_sequences=True, dropout=drop_rate)(noteEncode)
+        noteEncode = CuDNNLSTM(hidden_note, return_sequences=True)(noteInput)
+        noteEncode = Dropout(drop_rate)(noteEncode)
+        noteEncode = CuDNNLSTM(hidden_note, return_sequences=True)(noteEncode)
 
         deltaInput = Input(shape=(segLen, maxdelta))
-        deltaEncode = LSTM(hidden_delta, return_sequences=True, dropout=drop_rate)(deltaInput)
-        deltaEncode = LSTM(hidden_delta, return_sequences=True, dropout=drop_rate)(deltaEncode)
+        deltaEncode = CuDNNLSTM(hidden_delta, return_sequences=True)(deltaInput)
+        deltaEncode = Dropout(drop_rate)(deltaEncode)
+        deltaEncode = CuDNNLSTM(hidden_delta, return_sequences=True)(deltaEncode)
 
         codec = concatenate([noteEncode, deltaEncode], axis=-1)
-        codec = LSTM(600, return_sequences=True, dropout=drop_rate, activation='tanh')(codec)
-        codec = LSTM(600, return_sequences=False, dropout=drop_rate, activation='tanh')(codec)
+        codec = Dropout(drop_rate)(codec)
+        codec = CuDNNLSTM(600, return_sequences=True)(codec)
+        codec = Dropout(drop_rate)(codec)
+        codec = CuDNNLSTM(600, return_sequences=False)(codec)
         encoded = Dropout(drop_rate)(codec)
 
         fc_notes = Dense(vecLen, kernel_initializer='normal')(encoded) ## output PMF
