@@ -234,15 +234,9 @@ class rewardSystem:
         self.actions_delta = []
     def fn2float(self, s):
         return float('.'.join(s.split('_')[-1].split('.')[:-1]))
-    def reset(self, seed=None):
-        if seed is None: ## if seed is not specified, sets to 0
-            self.state_note[:,:,:] = 0
-            self.state_delta[:,:,:]= 0
-        else: # using seed
-            seed = np.load(str(seed))
-            seedIdx = np.random.randint(len(seed['notes']))
-            self.state_note[:,:,:] = seed['notes'][seedIdx,:,:]
-            self.state_delta[:,:,:]= seed['times'][seedIdx,:,:]
+    def reset(self):
+        self.state_note[:,:,:] = 0
+        self.state_delta[:,:,:]= 0
         self.firstNote = None
         self.actions_note = []
         self.actions_delta= []
