@@ -385,9 +385,9 @@ class rewardSystem:
         if verbose:
             sys.stderr.write("reward_note = %.2f, %.2f, %s\n" % (reward_note, pitchStyleReward, "T" if done else "F"))
             sys.stderr.write("reward_delta = %.2f, %.2f\n" % (reward_delta, tickStyleReward))
-        reward_note = np.clip(reward_note,-1,1)*self.c+self.d*np.clip(pitchStyleReward,-1,1)
-        reward_delta= np.clip(reward_delta,-1,1)*self.c+self.d*np.clip(tickStyleReward,-1,1)
-        return float(reward_note), float(reward_delta), done
+        return np.clip(reward_note,-1,1)*self.c+self.d*np.clip(pitchStyleReward,-1,1),
+                  np.clip(reward_delta,-1,1)*self.c+self.d*np.clip(tickStyleReward,-1,1),
+                  done, reward_note, reward_delta
 
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99, batch_size=128)
@@ -405,9 +405,9 @@ if __name__ == "__main__":
             done = False
             while not done:
                 action_note, action_delta, p_n, p_d = agent.act([snote, sdelta]) ## action on state
-                reward_note, reward_delta, done = rewardSys.reward(action_note, action_delta, verbose=True) ## reward on state
-                score_note += float(reward_note)
-                score_delta += float(reward_delta)
+                reward_note, reward_delta, done, mt_note, mt_delta = rewardSys.reward(action_note, action_delta, verbose=True) ## reward on state
+                score_note += float(mt_note)
+                score_delta += float(mt_delta)
                 nnote, ndelta = rewardSys.get_state() ## get next state
                 agent.remember(action_note, action_delta, snote, sdelta, reward_note, reward_delta, p_n, p_d)
                 snote, sdelta = nnote, ndelta ## update current state
