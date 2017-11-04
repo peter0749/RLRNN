@@ -58,16 +58,11 @@ class PGAgent:
     def _build_model(self):
         # Neural Net for PG learning Model
         noteInput  = Input(shape=(segLen, vecLen))
-        noteEncode = CuDNNLSTM(hidden_note, return_sequences=True)(noteInput)
-        noteEncode = Dropout(drop_rate)(noteEncode)
-        noteEncode = CuDNNLSTM(hidden_note, return_sequences=True)(noteEncode)
 
         deltaInput = Input(shape=(segLen, maxdelta))
-        deltaEncode = CuDNNLSTM(hidden_delta, return_sequences=True)(deltaInput)
-        deltaEncode = Dropout(drop_rate)(deltaEncode)
-        deltaEncode = CuDNNLSTM(hidden_delta, return_sequences=True)(deltaEncode)
 
-        codec = concatenate([noteEncode, deltaEncode], axis=-1)
+        codec = concatenate([noteInput, deltaInput], axis=-1)
+        codec = CuDNNLSTM(600, return_sequences=True)(codec)
         codec = Dropout(drop_rate)(codec)
         codec = CuDNNLSTM(600, return_sequences=True)(codec)
         codec = Dropout(drop_rate)(codec)
