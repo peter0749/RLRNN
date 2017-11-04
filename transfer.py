@@ -58,14 +58,11 @@ class PGAgent:
     def _build_model(self):
         # Neural Net for PG learning Model
         noteInput  = Input(shape=(segLen, vecLen))
-        noteEncode = LSTM(hidden_note, return_sequences=True, dropout=drop_rate)(noteInput)
-        noteEncode = LSTM(hidden_note, return_sequences=True, dropout=drop_rate)(noteEncode)
 
         deltaInput = Input(shape=(segLen, maxdelta))
-        deltaEncode = LSTM(hidden_delta, return_sequences=True, dropout=drop_rate)(deltaInput)
-        deltaEncode = LSTM(hidden_delta, return_sequences=True, dropout=drop_rate)(deltaEncode)
 
-        codec = concatenate([noteEncode, deltaEncode], axis=-1)
+        codec = concatenate([noteInput, deltaInput], axis=-1)
+        codec = LSTM(600, return_sequences=True, dropout=drop_rate, activation='tanh')(codec)
         codec = LSTM(600, return_sequences=True, dropout=drop_rate, activation='tanh')(codec)
         codec = LSTM(600, return_sequences=False, dropout=drop_rate, activation='tanh')(codec)
         encoded = Dropout(drop_rate)(codec)
