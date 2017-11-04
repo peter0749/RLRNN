@@ -11,7 +11,7 @@ import numpy as np
 from collections import deque
 import math
 from keras.models import Sequential, Model
-from keras.layers import Dense, Input, concatenate, Dropout, BatchNormalization, Activation, CuDNNLSTM
+from keras.layers import Dense, Input, concatenate, Dropout, Activation, CuDNNLSTM
 from keras.optimizers import SGD
 from keras import backend as K
 from keras.models import load_model
@@ -26,7 +26,7 @@ vecLen=pianoKeys*track_num
 maxdelta=33
 hidden_delta=128
 hidden_note=256
-drop_rate=0.2
+drop_rate=0.3
 
 class PGAgent:
     def __init__(self, lr=1e-7, gamma=0.95, batch_size=128): ## low lr to tune all weights
@@ -70,11 +70,9 @@ class PGAgent:
         encoded = Dropout(drop_rate)(codec)
 
         fc_notes = Dense(vecLen, kernel_initializer='normal')(encoded) ## output PMF
-        fc_notes = BatchNormalization()(fc_notes)
         pred_notes = Activation('softmax', name='note_output')(fc_notes)
 
         fc_delta = Dense(maxdelta, kernel_initializer='normal')(encoded) ## output PMF
-        fc_delta = BatchNormalization()(fc_delta)
         pred_delta = Activation('softmax', name='time_output')(fc_delta) ## output PMF
 
         model = Model([noteInput, deltaInput], [pred_notes, pred_delta])
