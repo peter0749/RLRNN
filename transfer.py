@@ -385,9 +385,7 @@ class rewardSystem:
         if verbose:
             sys.stderr.write("reward_note = %.2f, %.2f, %s\n" % (reward_note, pitchStyleReward, "T" if done else "F"))
             sys.stderr.write("reward_delta = %.2f, %.2f\n" % (reward_delta, tickStyleReward))
-        return np.clip(reward_note,-1,1)*self.c+self.d*np.clip(pitchStyleReward,-1,1),
-                  np.clip(reward_delta,-1,1)*self.c+self.d*np.clip(tickStyleReward,-1,1),
-                  done, reward_note, reward_delta
+        return np.clip(reward_note,-1,1)*self.c+self.d*np.clip(pitchStyleReward,-1,1), np.clip(reward_delta,-1,1)*self.c+self.d*np.clip(tickStyleReward,-1,1), done, reward_note, reward_delta
 
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99, batch_size=128)
