@@ -211,17 +211,15 @@ def acf(x, l):
     return sump / (x.var()*(len(x)-l))
 
 class rewardSystem:
-    def __init__(self, rat, model_dir=None): ## higher rat -> more mt score
+    def __init__(self, model_r, mt_r, model_dir=None): ## higher rat -> more mt score
         self.rewardRNN = None
         if not model_dir is None:
             self.rewardRNN = [ (load_model(str(model_dir)+'/'+r), self.fn2float(r)) for r in os.listdir(str(model_dir)) ]
         self.state_note = np.zeros((1, segLen, vecLen), dtype=np.bool)
         self.state_delta= np.zeros((1, segLen, maxdelta), dtype=np.bool)
         self.firstNote = None
-        C = 0.5
-        rat = np.clip(rat,0,C)
-        self.d = C-rat ## score from original model
-        self.c = 1-self.d ## music theorem score rate
+        self.d = model_r ## score from original model
+        self.c = mt_r ## music theorem score rate
         self.tick_counter = 0
         self.actions_note = []
         self.actions_delta = []
@@ -387,7 +385,7 @@ class rewardSystem:
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99, batch_size=128)
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.3,model_dir = str(sys.argv[2])) ## more sensitive, 0.2, 0.8
+    rewardSys = rewardSystem(0.2, 0.8,model_dir = str(sys.argv[2])) ## more sensitive, 0.2, 0.8
     done = False
 
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
