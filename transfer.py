@@ -256,14 +256,12 @@ class rewardSystem:
         return 0
     def checkTune(self):
         AC = lambda x, s: x in s
-        tkeys = []
-        for n in self.actions_note:
-            tkeys.append(int(n+36))
-        noteHist, _ = np.histogram(np.array(tkeys)%12, bins=12)
+        tkeys = [ int((n+36)%12) for n in self.actions_note ]
+        noteHist, _ = np.histogram(tkeys, bins=12)
         histArg = np.argsort(-noteHist)
         tune = set(histArg[:3]) ## decreaseing order, top 3
         key =  set(histArg[:7]) ## decreaseing order, top 7
-        main = [ (v+36)%12 for i, v in enumerate(self.actions_note) if self.actions_delta[i]>0 ]
+        main = [ int((v+36)%12) for i, v in enumerate(self.actions_note) if self.actions_delta[i]>0 ]
         main_score = 0
         if len(main)>0:
             for n in main:
