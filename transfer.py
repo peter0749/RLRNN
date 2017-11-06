@@ -11,7 +11,7 @@ import numpy as np
 from collections import deque
 import math
 from keras.models import Sequential, Model
-from keras.layers import Dense, Input, concatenate, Dropout, Activation, LSTM
+from keras.layers import Dense, Input, concatenate, Dropout, Activation, CuDNNLSTM
 from keras.optimizers import SGD
 from keras import backend as K
 from keras.models import load_model
@@ -62,9 +62,11 @@ class PGAgent:
         deltaInput = Input(shape=(segLen, maxdelta))
 
         codec = concatenate([noteInput, deltaInput], axis=-1)
-        codec = LSTM(600, return_sequences=True, dropout=drop_rate, activation='tanh')(codec)
-        codec = LSTM(600, return_sequences=True, dropout=drop_rate, activation='tanh')(codec)
-        codec = LSTM(600, return_sequences=False, dropout=drop_rate, activation='tanh')(codec)
+        codec = CuDNNLSTM(600, return_sequences=True)(codec)
+        codec = Dropout(drop_rate)(codec)
+        codec = CuDNNLSTM(600, return_sequences=True)(codec)
+        codec = Dropout(drop_rate)(codec)
+        codec = CuDNNLSTM(600, return_sequences=False)(codec)
         encoded = Dropout(drop_rate)(codec)
 
         fc_notes = Dense(vecLen, kernel_initializer='normal')(encoded) ## output PMF
