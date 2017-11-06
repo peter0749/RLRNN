@@ -20,7 +20,7 @@ from operator import itemgetter
 
 EPISODES = 8000
 segLen=48
-track_num=2
+track_num=1
 pianoKeys=60
 vecLen=pianoKeys*track_num
 maxdelta=33
@@ -235,15 +235,14 @@ class rewardSystem:
         if x>0: return 1
         cnt=1 ## self
         for i, v in enumerate(reversed(deltas)): ## others
-            cnt += 1 if self.sameTrack(y, notes[len(deltas)-1-i]) else 0
+            cnt += 1
             if v!=0: break
         return cnt
     def countSameNote(self, x, l):
         cnt = 1
         for v in reversed(l):
-            if self.sameTrack(v, x):
-                if v==x: cnt+=1
-                else: break
+            if v==x: cnt+=1
+            else: break
         return cnt
     def get_state(self):
         return self.state_note, self.state_delta
@@ -253,41 +252,17 @@ class rewardSystem:
         elif diffLastNote<=2 and delta==0: ## annoying sound
             return -1
         return 0
-    def sameTrack(self, a, b):
-        return (a<pianoKeys and b<pianoKeys) or (a>=pianoKeys and b>=pianoKeys)
-    def checkTrackDist(self, note, delta, notes, deltas):
-        accumTick=delta
-        i = None
-        for ti, v in enumerate(reversed(deltas)):
-            i = len(deltas)-1-ti
-            if not self.sameTrack(note ,notes[i]): break ## find accompany
-            i = None
-            accumTick += v
-        return accumTick, i
-    def findRootNote(self, idx, notes, deltas):
-        rootN = notes[idx]-pianoKeys ## find root note of accompany
-        for i in reversed(range(idx)): ## reverse([0,idx))
-            if notes[i]>=pianoKeys: ## is accompany
-                rootN = min(rootN, notes[i]-pianoKeys) ## at smaller pitch
-                if deltas[i]>0: break ## if not stack on others, break
-            else: break ## not an accompany note
-        return rootN
     def checkTune(self):
         AC = lambda x, s: x in s
         tkeys = []
         for n in self.actions_note:
-            if n<pianoKeys: ## main
-                tkeys.append(int(n+36))
-            else:
-                tkeys.append(int(n-pianoKeys+36))
+            tkeys.append(int(n+36))
         noteHist, _ = np.histogram(np.array(tkeys)%12, bins=12)
         histArg = np.argsort(-noteHist)
         tune = set(histArg[:3]) ## decreaseing order, top 3
         key =  set(histArg[:7]) ## decreaseing order, top 7
-        main = [ (v+36)%12 for i, v in enumerate(self.actions_note) if v<pianoKeys and self.actions_delta[i]>0 ]
-        accompany = [ (v-pianoKeys+36)%12 for i, v in enumerate(self.actions_note) if v>=pianoKeys and self.actions_delta[i]>0 ]
+        main = [ (v+36)%12 for i, v in enumerate(self.actions_note) if self.actions_delta[i]>0 ]
         main_score = 0
-        accompany_score = 0
         if len(main)>0:
             for n in main:
                 if not n in key: main_score -= 1
@@ -300,18 +275,7 @@ class rewardSystem:
                     main_score += 1
             if main[0]==main[-1] and main[0]==histArg[0]: main_score += 1
             main_score /= float(len(main))
-        if len(accompany)>0:
-            for n in accompany:
-                if not n in key: accompany_score -= 1
-            for i in xrange(1, len(accompany)):
-                last = accompany[i-1]
-                curr = accompany[i]
-                lastA= AC(last,accompany)
-                currA= AC(curr,accompany)
-                if not lastA and currA: ## inact -> act
-                    accompany_score += 1
-            accompany_score /= float(len(accompany))
-        return main_score+accompany_score
+        return main_score
 
     def reward(self, action_note, action_delta, verbose=False):
         done = False
@@ -328,21 +292,8 @@ class rewardSystem:
             tickStyleReward /= tot_r
         reward_note=0
         reward_delta=0
-        idx = None
-        if len(self.actions_note)>0:
-            if self.sameTrack(action_note, self.actions_note[-1]):
-                reward_note += self.scale(abs(action_note-self.actions_note[-1]), action_delta)
-            if self.countSameNote(action_note, self.actions_note)>4: reward_note-=1
-            dist, idx = self.checkTrackDist(action_note, action_delta, self.actions_note, self.actions_delta)
-            if idx is None: ## idx points to a nearest accompany note
-                reward_note -= 1 ## the other track is dead
         if len(self.actions_note)>0 and self.tick_counter%32+action_delta>=32: ## complete a half of segment
-            if idx is None and np.sum(np.array(self.actions_delta)<=2)==len(self.actions_delta): ## too fast, too annoying
-                reward_delta -= 1
-            if action_note<pianoKeys: ## main
-                reward_delta -= 0 if self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note) <= 5 else 1
-            else: ## accompany
-                reward_delta -= 0 if self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note) <= 5 else 1
+            reward_delta -= 0 if self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note) <= 9 else 1
             ## too many fingers
             reward_note += self.checkTune() ## score on melody
             self.LA.extend(self.actions_note) ## append one full segment into LA

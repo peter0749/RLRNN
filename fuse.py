@@ -20,7 +20,7 @@ from operator import itemgetter
 
 EPISODES = 8000
 segLen=48
-track_num=2
+track_num=1
 pianoKeys=60
 vecLen=pianoKeys*track_num
 maxdelta=33
