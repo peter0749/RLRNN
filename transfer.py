@@ -293,8 +293,10 @@ class rewardSystem:
         reward_note=0
         reward_delta=0
         if len(self.actions_note)>0 and self.tick_counter%32+action_delta>=32: ## complete a half of segment
-            reward_delta -= 0 if self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note) <= 9 else 1
-            ## too many fingers
+            fig = self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note)
+            for i in reversed(range(len(self.actions_delta))):
+                fig = max(fig, self.countFinger(self.actions_delta[i], self.actions_note[i], self.actions_delta[:i], self.actions_note[:i]))
+            if fig<=1 or fig>=9: reward_delta -= 1
             reward_note += self.checkTune() ## score on melody
             self.LA.extend(self.actions_note) ## append one full segment into LA
             self.actions_note = []
