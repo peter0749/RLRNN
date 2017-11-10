@@ -249,9 +249,7 @@ class rewardSystem:
     def get_state(self):
         return self.state_note, self.state_delta
     def scale(self, diffLastNote, delta):
-        if diffLastNote>12: ## Too big jump
-            return -1
-        elif diffLastNote<=2 and delta==0: ## annoying sound
+        if diffLastNote<=2 and delta==0: ## annoying sound
             return -1
         return 0
     def checkTune(self):
@@ -292,6 +290,8 @@ class rewardSystem:
             tickStyleReward /= tot_r
         reward_note=0
         reward_delta=0
+        if len(self.actions_note)>0:
+            reward_note += self.scale(abs(self.actions_note[-1]-action_note), action_delta)
         if len(self.actions_note)>0 and self.tick_counter%32+action_delta>=32: ## complete a half of segment
             fig = self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note)
             for i in reversed(range(len(self.actions_delta))):
