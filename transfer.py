@@ -291,7 +291,9 @@ class rewardSystem:
         reward_note=0
         reward_delta=0
         if len(self.actions_note)>0:
-            reward_note += self.scale(abs(self.actions_note[-1]-action_note), action_delta)
+            if abs(self.actions_note[-1]-action_note)<=2 and action_delta==0:
+                reward_note-=1
+                reward_delta-=1
         if len(self.actions_note)>0 and self.tick_counter%32+action_delta>=32: ## complete a half of segment
             fig = self.countFinger(action_delta, action_note, self.actions_delta, self.actions_note)
             for i in reversed(range(len(self.actions_delta))):
