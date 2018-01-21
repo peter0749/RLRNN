@@ -19,6 +19,7 @@ from keras.layers import Dense, Input, concatenate, Dropout, Activation, CuDNNLS
 from keras.optimizers import SGD
 from keras import backend as K
 from keras.models import load_model
+from keras.callbacks import Tensorboard
 from itertools import groupby
 from operator import itemgetter
 
@@ -109,7 +110,7 @@ class PGAgent:
         deltas= np.array(self.deltas)
         target_n = np.vstack(self.pnotes) + self.learning_rate * grad_n
         target_d = np.vstack(self.pdeltas) + self.learning_rate * grad_d
-        self.model.fit([notes[:,0,:,:], deltas[:,0,:,:]], [target_n, target_d], batch_size=self.batch_size, epochs=1)
+        self.model.fit([notes[:,0,:,:], deltas[:,0,:,:]], [target_n, target_d], batch_size=self.batch_size, epochs=1, callbacks=[Tensorboard(log_dir='./tfboard')])
         self.reset() ## forget it
 
     def load(self, name):
