@@ -246,8 +246,8 @@ class rewardSystem:
             for i in xrange(1, len(main)):
                 last = main[i-1]
                 curr = main[i]
-                lastA= AC(last,main)
-                currA= AC(curr,main)
+                lastA= AC(last,tune)
+                currA= AC(curr,tune)
                 if not lastA and currA: ## inact -> act
                     main_score += 1
             if main[0]==main[-1] and main[0]==histArg[0]: main_score += 1
