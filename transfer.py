@@ -110,6 +110,7 @@ class PGAgent:
 
     def load(self, name):
         self.model = load_model(name)
+        self.model.compile(optimizer=SGD(lr=self.learning_rate, momentum=0.9), loss='categorical_crossentropy')
 
     def save(self, name):
         self.model.save_weights(name)
