@@ -10,6 +10,10 @@ import random
 import numpy as np
 from collections import deque
 import math
+import tensorflow as tf
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+session = tf.Session(config=config)
 from keras.models import Sequential, Model
 from keras.layers import Dense, Input, concatenate, Dropout, Activation, CuDNNLSTM
 from keras.optimizers import SGD
@@ -313,7 +317,7 @@ class rewardSystem:
 if __name__ == "__main__":
     agent = PGAgent(lr=1e-7, gamma=0.99, batch_size=128)
     agent.load(str(sys.argv[1]))
-    rewardSys = rewardSystem(0.2, 0.8,model_dir = str(sys.argv[2])) ## more sensitive, 0.2, 0.8
+    rewardSys = rewardSystem(0.05, 0.95, model_dir = str(sys.argv[2]))
     done = False
 
     with open('./pg.csv', 'a+', 0) as logFP: ## no-buffer logging
