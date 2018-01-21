@@ -250,7 +250,7 @@ class rewardSystem:
                 currA= AC(curr,tune)
                 if not lastA and currA: ## inact -> act
                     main_score += 1
-            if main[0]==main[-1] and main[0]==histArg[0]: main_score += 1
+            if main[0]==main[-1] and main[0]==histArg[0]: main_score += 5
             main_score /= float(len(main))
         return main_score
 
