@@ -32,7 +32,7 @@ class PGAgent:
     def __init__(self, lr=1e-7, gamma=0.95, batch_size=128): ## low lr to tune all weights
         self.batch_size = batch_size
         self.learning_rate = lr
-        self.model = self._build_model()
+        self.model = None
         self.notes = [] # 1
         self.deltas= [] # 2
         self.pnotes= [] # 3
@@ -54,30 +54,6 @@ class PGAgent:
         return np.random.choice(len(choices), 1, p=choices)[0]
     def reset(self):
         self.notes, self.deltas, self.pnotes, self.pdeltas, self.notes_grad, self.deltas_grad, self.notes_reward, self.deltas_reward = [], [], [], [], [], [], [], []
-
-    def _build_model(self):
-        # Neural Net for PG learning Model
-        noteInput  = Input(shape=(segLen, vecLen))
-
-        deltaInput = Input(shape=(segLen, maxdelta))
-
-        codec = concatenate([noteInput, deltaInput], axis=-1)
-        codec = LSTM(600, return_sequences=True, dropout=drop_rate, activation='tanh')(codec)
-        codec = LSTM(600, return_sequences=True, dropout=drop_rate, activation='tanh')(codec)
-        codec = LSTM(600, return_sequences=False, dropout=drop_rate, activation='tanh')(codec)
-        encoded = Dropout(drop_rate)(codec)
-
-        fc_notes = Dense(vecLen, kernel_initializer='normal')(encoded) ## output PMF
-        pred_notes = Activation('softmax', name='note_output')(fc_notes)
-
-        fc_delta = Dense(maxdelta, kernel_initializer='normal')(encoded) ## output PMF
-        pred_delta = Activation('softmax', name='time_output')(fc_delta) ## output PMF
-
-        model = Model([noteInput, deltaInput], [pred_notes, pred_delta])
-
-        model.compile(loss='categorical_crossentropy',
-                      optimizer=SGD(lr=self.learning_rate, clipnorm=1., decay=1e-7, momentum=0.9, nesterov=True))
-        return model
 
     def remember(self, note_act, delta_act, state_note, state_delta, reward_note, reward_delta, prob_note, prob_delta):
         ## appends all:
@@ -133,7 +109,7 @@ class PGAgent:
         self.reset() ## forget it
 
     def load(self, name):
-        self.model.load_weights(name)
+        self.model = load_model(name)
 
     def save(self, name):
         self.model.save_weights(name)
